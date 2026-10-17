@@ -34,8 +34,8 @@ public enum AppConfiguration {
     }
 
     public enum LayoutMetrics {
-        public static let popoverWidth: Double = 520.0
-        public static let popoverHeight: Double = 640.0
+        public static let popoverWidth: Double = 540.0
+        public static let popoverHeight: Double = 760.0
         public static let gridSpacing: Double = 10.0
         public static let cardCornerRadius: Double = 8.0
         public static let qrCodeDimensionPixels: Double = 220.0

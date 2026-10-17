@@ -51,27 +51,17 @@ public struct TactileSwitchCardView: View {
                     .frame(height: 1)
                     .padding(.horizontal, 10)
 
-                // Center Horological Instrument Bezel
+                // Center Horological Instrument Bezel with Bespoke Vector Schematic
                 HStack {
                     Spacer()
-                    ZStack {
-                        Circle()
-                            .fill(TactilePalette.obsidianBackground)
-                            .frame(width: 48, height: 48)
-                        Circle()
-                            .strokeBorder(
-                                isSwitchActive ? domainAccent.opacity(0.85) : TactilePalette.gridLine,
-                                lineWidth: isSwitchActive ? 1.6 : 1.0
-                            )
-                            .frame(width: 48, height: 48)
-
-                        Image(systemName: item.sfSymbolName)
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(isSwitchActive ? domainAccent : TactilePalette.ivoryText)
-                    }
+                    TactileVectorIconView(
+                        switchID: item.id,
+                        isActive: isSwitchActive,
+                        accentColor: domainAccent
+                    )
                     Spacer()
                 }
-                .padding(.vertical, 12)
+                .padding(.vertical, 10)
 
                 Rectangle()
                     .fill(TactilePalette.hairlineSubtle)

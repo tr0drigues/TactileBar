@@ -8,6 +8,7 @@ public final class SwitchRegistry {
     public var selectedDomainFilter: SwitchDomain?
     public var searchQuery: String = ""
     public var isShowingSupportSheet: Bool = false
+    public var isShowingRadialDial: Bool = true
     public var availableUpdate: ReleaseUpdateInfo?
     public private(set) var totalTriggerCount: Int
 

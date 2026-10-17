@@ -20,6 +20,13 @@ public struct MainPopoverView: View {
             headerSection
             domainFilterBar
             Divider().overlay(TactilePalette.gridLine)
+            if registry.isShowingRadialDial {
+                TactileTelemetryDialView(
+                    registry: registry,
+                    storageTelemetry: DiskStorageTelemetry.current()
+                )
+                Divider().overlay(TactilePalette.gridLine)
+            }
             switchGridSection
             Divider().overlay(TactilePalette.gridLine)
             footerSection
@@ -58,6 +65,39 @@ public struct MainPopoverView: View {
                 Spacer()
 
                 HStack(spacing: 8) {
+                    Button {
+                        registry.isShowingRadialDial.toggle()
+                    } label: {
+                        Text(registry.isShowingRadialDial ? "DIAL: ON" : "DIAL: OFF")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(
+                                        registry.isShowingRadialDial
+                                            ? TactilePalette.tungstenAmber.opacity(0.18)
+                                            : TactilePalette.graphitePanel
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .strokeBorder(
+                                                registry.isShowingRadialDial
+                                                    ? TactilePalette.tungstenAmber
+                                                    : TactilePalette.gridLine,
+                                                lineWidth: 1
+                                            )
+                                    )
+                            )
+                            .foregroundStyle(
+                                registry.isShowingRadialDial
+                                    ? TactilePalette.tungstenAmber
+                                    : TactilePalette.silverMuted
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Mostrar/ocultar o Disco Concêntrico de Telemetria")
+
                     Text(String(format: "ACTIVE %02d/%02d", registry.activeSwitchCount, registry.switches.count))
                         .font(.system(size: 10.5, weight: .bold, design: .monospaced))
                         .padding(.horizontal, 8)
