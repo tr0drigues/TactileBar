@@ -58,59 +58,107 @@ public struct MainPopoverView: View {
     }
 
     private var headerSection: some View {
-        VStack(spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("TACTILE TELEMETRY // INSTRUMENT PANEL")
-                        .font(.system(size: 9.5, weight: .bold, design: .monospaced))
-                        .foregroundStyle(TactilePalette.tungstenAmber)
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("TACTILE TELEMETRY")
+                    .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.tungstenAmber)
 
-                    Text(AppConfiguration.applicationName.uppercased())
-                        .font(.system(size: 20, weight: .heavy, design: .default))
-                        .tracking(1.2)
-                        .foregroundStyle(TactilePalette.ivoryText)
-                }
+                Text(AppConfiguration.applicationName.uppercased())
+                    .font(.system(size: 16, weight: .heavy, design: .default))
+                    .tracking(1.1)
+                    .foregroundStyle(TactilePalette.ivoryText)
+            }
 
-                Spacer()
+            // Compact inline search field
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 10))
+                    .foregroundStyle(TactilePalette.slateDim)
 
-                HStack(spacing: 8) {
+                TextField("FILTER (SW.01, AUDIO, DARK)...", text: $registry.searchQuery)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(TactilePalette.ivoryText)
+
+                if !registry.searchQuery.isEmpty {
                     Button {
-                        registry.isShowingRadialDial.toggle()
+                        registry.searchQuery = ""
                     } label: {
-                        Text(registry.isShowingRadialDial ? "DIAL: ON" : "DIAL: OFF")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(
-                                        registry.isShowingRadialDial
-                                            ? TactilePalette.tungstenAmber.opacity(0.18)
-                                            : TactilePalette.graphitePanel
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .strokeBorder(
-                                                registry.isShowingRadialDial
-                                                    ? TactilePalette.tungstenAmber
-                                                    : TactilePalette.gridLine,
-                                                lineWidth: 1
-                                            )
-                                    )
-                            )
-                            .foregroundStyle(
-                                registry.isShowingRadialDial
-                                    ? TactilePalette.tungstenAmber
-                                    : TactilePalette.silverMuted
-                            )
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(TactilePalette.slateDim)
                     }
                     .buttonStyle(.plain)
-                    .help("Mostrar/ocultar o Disco Concêntrico de Telemetria")
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(TactilePalette.graphitePanel)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(TactilePalette.gridLine, lineWidth: 1)
+                    )
+            )
 
-                    Text(String(format: "ACTIVE %02d/%02d", registry.activeSwitchCount, registry.switches.count))
-                        .font(.system(size: 10.5, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 8)
+            HStack(spacing: 6) {
+                Button {
+                    registry.isShowingRadialDial.toggle()
+                } label: {
+                    Text(registry.isShowingRadialDial ? "DIAL: ON" : "DIAL: OFF")
+                        .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                        .padding(.horizontal, 7)
                         .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(
+                                    registry.isShowingRadialDial
+                                        ? TactilePalette.tungstenAmber.opacity(0.18)
+                                        : TactilePalette.graphitePanel
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .strokeBorder(
+                                            registry.isShowingRadialDial
+                                                ? TactilePalette.tungstenAmber
+                                                : TactilePalette.gridLine,
+                                            lineWidth: 1
+                                        )
+                                )
+                        )
+                        .foregroundStyle(
+                            registry.isShowingRadialDial
+                                ? TactilePalette.tungstenAmber
+                                : TactilePalette.silverMuted
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Mostrar/ocultar o Deck de Telemetria (Bluetooth, Disco Concêntrico e Volumes)")
+
+                Text(String(format: "SW %02d/%02d", registry.activeSwitchCount, registry.switches.count))
+                    .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(TactilePalette.graphitePanel)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 1)
+                            )
+                    )
+                    .foregroundStyle(TactilePalette.oscilloscopeCyan)
+
+                Button {
+                    Task { await registry.refreshAll() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(TactilePalette.silverMuted)
+                        .frame(width: 22, height: 22)
                         .background(
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(TactilePalette.graphitePanel)
@@ -119,220 +167,91 @@ public struct MainPopoverView: View {
                                         .strokeBorder(TactilePalette.gridLine, lineWidth: 1)
                                 )
                         )
-                        .foregroundStyle(TactilePalette.oscilloscopeCyan)
-
-                    Button {
-                        Task { await registry.refreshAll() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(TactilePalette.silverMuted)
-                            .frame(width: 24, height: 24)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(TactilePalette.graphitePanel)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .help("Sincronizar estado de todos os 26 módulos")
                 }
+                .buttonStyle(.plain)
+                .help("Sincronizar estado de todos os 26 módulos, discos e dispositivos Bluetooth")
             }
-
-            // Filter Search Input
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11))
-                    .foregroundStyle(TactilePalette.slateDim)
-
-                TextField("FILTER TELEMETRY (EX: SW.01, AUDIO, DARK, XCODE)...", text: $registry.searchQuery)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                    .foregroundStyle(TactilePalette.ivoryText)
-
-                if !registry.searchQuery.isEmpty {
-                    Button {
-                        registry.searchQuery = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(TactilePalette.slateDim)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(TactilePalette.graphitePanel)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(TactilePalette.gridLine, lineWidth: 1)
-                    )
-            )
         }
         .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 10)
+        .padding(.top, 11)
+        .padding(.bottom, 8)
     }
 
     private var domainFilterBar: some View {
         HStack(spacing: 6) {
-            domainTabButton(label: "ALL (26)", domain: nil, accent: TactilePalette.ivoryText)
-
-            ForEach(SwitchDomain.allCases) { domain in
+            ForEach(SwitchDomain.allCases, id: \.self) { domain in
+                let domainItems = registry.switches.filter { $0.domain == domain }
+                let activeInDomain = domainItems.filter { $0.state.isEnabled }.count
                 domainTabButton(
                     label: domain.shortCode,
+                    countBadge: "\(activeInDomain)/\(domainItems.count)",
                     domain: domain,
                     accent: TactilePalette.accentColor(for: domain)
                 )
             }
-            Spacer()
+
+            Spacer(minLength: 4)
+
+            domainTabButton(
+                label: "ALL",
+                countBadge: "\(registry.switches.count)",
+                domain: nil,
+                accent: TactilePalette.ivoryText
+            )
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 10)
+        .padding(.bottom, 8)
     }
 
-    private func domainTabButton(label: String, domain: SwitchDomain?, accent: Color) -> some View {
+    private func domainTabButton(label: String, countBadge: String, domain: SwitchDomain?, accent: Color) -> some View {
         let isSelected = registry.selectedDomainFilter == domain
         return Button {
             registry.selectedDomainFilter = domain
         } label: {
-            Text(label)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(isSelected ? accent.opacity(0.2) : TactilePalette.graphitePanel)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(isSelected ? accent : TactilePalette.gridLine, lineWidth: 1)
-                )
-                .foregroundStyle(isSelected ? accent : TactilePalette.silverMuted)
+            HStack(spacing: 5) {
+                if domain != nil {
+                    Circle()
+                        .fill(isSelected ? accent : accent.opacity(0.65))
+                        .frame(width: 5, height: 5)
+                }
+
+                Text(label)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(isSelected ? accent : TactilePalette.ivoryText)
+
+                Text(countBadge)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(isSelected ? accent.opacity(0.9) : TactilePalette.slateDim)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(isSelected ? accent.opacity(0.18) : TactilePalette.graphitePanel)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(isSelected ? accent : TactilePalette.gridLine, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
 
     private var switchGridSection: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
-                    ForEach(registry.filteredSwitches, id: \.id) { item in
-                        TactileSwitchCardView(item: item) {
-                            Task {
-                                await registry.triggerSwitch(withID: item.id)
-                            }
+            LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
+                ForEach(registry.filteredSwitches, id: \.id) { item in
+                    TactileSwitchCardView(item: item) {
+                        Task {
+                            await registry.triggerSwitch(withID: item.id)
                         }
                     }
-                }
-
-                if registry.selectedDomainFilter == .signal && !registry.pairedBluetoothDevices.isEmpty {
-                    pairedBluetoothDevicesSection
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
         }
-    }
-
-    private var pairedBluetoothDevicesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("PAIRED BLUETOOTH DEVICES // CONNECT & DISCONNECT")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(TactilePalette.signalEmerald)
-
-                Spacer()
-
-                Text("\(registry.pairedBluetoothDevices.count) PAIRED")
-                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(TactilePalette.slateDim)
-            }
-            .padding(.top, 2)
-
-            LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
-                ForEach(registry.pairedBluetoothDevices) { device in
-                    let isBusy = registry.connectingBluetoothDeviceID == device.id
-                    let isPreferred = registry.selectedBluetoothDeviceID == device.id
-                    let accent = TactilePalette.signalEmerald
-
-                    Button {
-                        Task {
-                            await registry.toggleBluetoothDevice(device)
-                        }
-                    } label: {
-                        HStack(spacing: 10) {
-                            TactileVectorIconView(
-                                switchID: "SW.17",
-                                isActive: device.isConnected,
-                                accentColor: accent,
-                                dimension: 36.0
-                            )
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(device.name.uppercased())
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(TactilePalette.ivoryText)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(
-                                            isBusy
-                                                ? TactilePalette.tungstenAmber
-                                                : (device.isConnected ? accent : TactilePalette.slateDim.opacity(0.6))
-                                        )
-                                        .frame(width: 5, height: 5)
-
-                                    Text(
-                                        isBusy
-                                            ? "LINKING RF..."
-                                            : (device.isConnected ? "\(device.kindBadge) · CONNECTED" : "\(device.kindBadge) · STANDBY")
-                                    )
-                                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
-                                    .foregroundStyle(
-                                        isBusy
-                                            ? TactilePalette.tungstenAmber
-                                            : (device.isConnected ? accent : TactilePalette.silverMuted)
-                                    )
-                                    .lineLimit(1)
-                                }
-                            }
-
-                            Spacer(minLength: 4)
-
-                            TactileTogglePillView(
-                                isOn: device.isConnected,
-                                isMomentary: false,
-                                accentColor: accent
-                            )
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52)
-                        .background(
-                            RoundedRectangle(cornerRadius: AppConfiguration.LayoutMetrics.cardCornerRadius)
-                                .fill(device.isConnected ? TactilePalette.elevatedPanel : TactilePalette.graphitePanel)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AppConfiguration.LayoutMetrics.cardCornerRadius)
-                                .strokeBorder(
-                                    device.isConnected
-                                        ? accent.opacity(0.75)
-                                        : (isPreferred ? TactilePalette.borderSteel : TactilePalette.gridLine),
-                                    lineWidth: device.isConnected ? 1.2 : 0.9
-                                )
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("Conectar ou desconectar \(device.name) (\(device.address))")
-                }
-            }
-        }
+        .scrollIndicators(.automatic)
     }
 
     private var footerSection: some View {

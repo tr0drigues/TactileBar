@@ -137,12 +137,67 @@ public final class SwitchRegistry {
         DiskVolumeTelemetryService.revealInFinder(current)
     }
 
+    public var selectedBluetoothDevice: BluetoothDeviceItem? {
+        if let match = pairedBluetoothDevices.first(where: { $0.id == selectedBluetoothDeviceID }) {
+            return match
+        }
+        return pairedBluetoothDevices.first
+    }
+
+    public var selectedBluetoothIndex: Int {
+        guard let idx = pairedBluetoothDevices.firstIndex(where: { $0.id == selectedBluetoothDeviceID }) else {
+            return pairedBluetoothDevices.isEmpty ? 0 : 1
+        }
+        return idx + 1
+    }
+
+    public var connectedBluetoothCount: Int {
+        pairedBluetoothDevices.filter(\.isConnected).count
+    }
+
+    public var isShowingBluetoothList: Bool = false
+
     public func refreshBluetoothDevices() {
         let updated = BluetoothDeviceService.listPairedDevices()
         pairedBluetoothDevices = updated
         if !updated.contains(where: { $0.id == selectedBluetoothDeviceID }), let first = updated.first {
             selectedBluetoothDeviceID = first.id
         }
+    }
+
+    public func cycleNextBluetoothDevice() {
+        guard !pairedBluetoothDevices.isEmpty else { return }
+        if let idx = pairedBluetoothDevices.firstIndex(where: { $0.id == selectedBluetoothDeviceID }) {
+            let nextIdx = (idx + 1) % pairedBluetoothDevices.count
+            selectedBluetoothDeviceID = pairedBluetoothDevices[nextIdx].id
+        } else if let first = pairedBluetoothDevices.first {
+            selectedBluetoothDeviceID = first.id
+        }
+        Task {
+            if let btSwitch = switches.first(where: { $0.id == "SW.17" }) {
+                await btSwitch.refreshState()
+            }
+        }
+    }
+
+    public func cyclePreviousBluetoothDevice() {
+        guard !pairedBluetoothDevices.isEmpty else { return }
+        if let idx = pairedBluetoothDevices.firstIndex(where: { $0.id == selectedBluetoothDeviceID }) {
+            let prevIdx = (idx - 1 + pairedBluetoothDevices.count) % pairedBluetoothDevices.count
+            selectedBluetoothDeviceID = pairedBluetoothDevices[prevIdx].id
+        } else if let first = pairedBluetoothDevices.first {
+            selectedBluetoothDeviceID = first.id
+        }
+        Task {
+            if let btSwitch = switches.first(where: { $0.id == "SW.17" }) {
+                await btSwitch.refreshState()
+            }
+        }
+    }
+
+    public func toggleSelectedBluetoothDevice() async {
+        guard let current = selectedBluetoothDevice else { return }
+        await toggleBluetoothDevice(current)
     }
 
     public func toggleBluetoothDevice(_ device: BluetoothDeviceItem) async {

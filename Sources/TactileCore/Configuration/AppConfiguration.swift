@@ -3,7 +3,7 @@ import Foundation
 public enum AppConfiguration {
     public static let applicationName = "TactileBar"
     public static let bundleIdentifier = "studio.tactile.TactileBar"
-    public static let currentVersion = "1.0.4"
+    public static let currentVersion = "1.0.6"
     public static let totalCatalogSwitchCount = 26
 
     public static let githubRepositoryOwner = "tr0drigues"
@@ -35,7 +35,7 @@ public enum AppConfiguration {
 
     public enum LayoutMetrics {
         public static let popoverWidth: Double = 540.0
-        public static let popoverHeight: Double = 608.0
+        public static let popoverHeight: Double = 576.0
         public static let gridSpacing: Double = 8.0
         public static let cardCornerRadius: Double = 7.0
         public static let qrCodeDimensionPixels: Double = 220.0
