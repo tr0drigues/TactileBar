@@ -1,0 +1,12 @@
+.DS_Store
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+TactileBar.app/
+*.zip
+*.sha256
+.cursor/
+.vscode/
+.mcp.json
