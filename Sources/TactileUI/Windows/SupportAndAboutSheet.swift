@@ -129,7 +129,7 @@ public struct SupportAndAboutSheet: View {
 
                 Spacer()
 
-                Text("MIT LICENSE // NATIVE SWIFT INSTRUMENT")
+                Text("GPLv3 LICENSE // NATIVE SWIFT INSTRUMENT")
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
                     .foregroundStyle(TactilePalette.slateDim)
             }

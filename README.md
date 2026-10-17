@@ -8,7 +8,7 @@
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-0B0C0E?style=flat-square&logo=apple&logoColor=F4F4F0)](https://github.com/tr0drigues/TactileBar/releases)
 [![Swift](https://img.shields.io/badge/Swift-5.10%20%7C%206.0-F05138?style=flat-square&logo=swift&logoColor=white)](https://swift.org)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-10B981?style=flat-square)](Package.swift)
-[![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-F59E0B?style=flat-square)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-EA4AAA?style=flat-square&logo=githubsponsors)](https://github.com/sponsors/tr0drigues)
 
 [**English**](#-english) · [**Português (Brasil)**](#-português-brasil) · [**Download Latest Release (.dmg)**](https://github.com/tr0drigues/TactileBar/releases/latest)
@@ -166,5 +166,5 @@ Se o **TactileBar** economiza o seu tempo no dia a dia, considere apoiar a evolu
 
 ## 📄 License / Licença
 
-Distributed under the [MIT License](LICENSE).  
-Distribuído sob a licença [MIT](LICENSE).
+Distributed under the **[GNU General Public License v3.0 (GPLv3)](LICENSE)** — free to use, study, and modify, ensuring that any derivative distribution remains open-source under the same license.  
+Distribuído sob a licença **[GNU General Public License v3.0 (GPLv3)](LICENSE)** — livre para usar, estudar e modificar, garantindo que qualquer redistribuição ou derivado permaneça de código aberto sob a mesma licença.
