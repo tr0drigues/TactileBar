@@ -12,8 +12,17 @@ public final class SwitchRegistry {
     public var availableUpdate: ReleaseUpdateInfo?
     public private(set) var mountedVolumes: [MountedVolumeInfo] = []
     public var selectedVolumeID: String = "/"
+    public private(set) var pairedBluetoothDevices: [BluetoothDeviceItem] = []
+    public var selectedBluetoothDeviceID: String = "" {
+        didSet {
+            userDefaults.set(selectedBluetoothDeviceID, forKey: preferredBluetoothStorageKey)
+        }
+    }
+    public private(set) var connectingBluetoothDeviceID: String?
     public private(set) var totalTriggerCount: Int
 
+    public static let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
+    private let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
     private let triggerCountStorageKey = "studio.tactile.TactileBar.totalTriggerCount"
     private let userDefaults: UserDefaults
 
@@ -28,6 +37,15 @@ public final class SwitchRegistry {
         self.mountedVolumes = initialVolumes
         if let first = initialVolumes.first {
             self.selectedVolumeID = first.id
+        }
+
+        let initialBT = BluetoothDeviceService.listPairedDevices()
+        self.pairedBluetoothDevices = initialBT
+        let savedBT = userDefaults.string(forKey: preferredBluetoothStorageKey) ?? ""
+        if initialBT.contains(where: { $0.id == savedBT }) {
+            self.selectedBluetoothDeviceID = savedBT
+        } else if let firstBT = initialBT.first {
+            self.selectedBluetoothDeviceID = firstBT.id
         }
     }
 
@@ -119,8 +137,31 @@ public final class SwitchRegistry {
         DiskVolumeTelemetryService.revealInFinder(current)
     }
 
+    public func refreshBluetoothDevices() {
+        let updated = BluetoothDeviceService.listPairedDevices()
+        pairedBluetoothDevices = updated
+        if !updated.contains(where: { $0.id == selectedBluetoothDeviceID }), let first = updated.first {
+            selectedBluetoothDeviceID = first.id
+        }
+    }
+
+    public func toggleBluetoothDevice(_ device: BluetoothDeviceItem) async {
+        selectedBluetoothDeviceID = device.id
+        connectingBluetoothDeviceID = device.id
+        let shouldConnect = !device.isConnected
+        _ = await BluetoothDeviceService.setConnection(address: device.address, connect: shouldConnect)
+        connectingBluetoothDeviceID = nil
+        totalTriggerCount += 1
+        userDefaults.set(totalTriggerCount, forKey: triggerCountStorageKey)
+        refreshBluetoothDevices()
+        if let btSwitch = switches.first(where: { $0.id == "SW.17" }) {
+            await btSwitch.refreshState()
+        }
+    }
+
     public func refreshAll() async {
         refreshDiskVolumes()
+        refreshBluetoothDevices()
         for item in switches {
             await item.refreshState()
         }

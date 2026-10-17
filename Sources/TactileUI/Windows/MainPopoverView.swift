@@ -217,17 +217,121 @@ public struct MainPopoverView: View {
 
     private var switchGridSection: some View {
         ScrollView {
-            LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
-                ForEach(registry.filteredSwitches, id: \.id) { item in
-                    TactileSwitchCardView(item: item) {
-                        Task {
-                            await registry.triggerSwitch(withID: item.id)
+            VStack(alignment: .leading, spacing: 10) {
+                LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
+                    ForEach(registry.filteredSwitches, id: \.id) { item in
+                        TactileSwitchCardView(item: item) {
+                            Task {
+                                await registry.triggerSwitch(withID: item.id)
+                            }
                         }
                     }
+                }
+
+                if registry.selectedDomainFilter == .signal && !registry.pairedBluetoothDevices.isEmpty {
+                    pairedBluetoothDevicesSection
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+        }
+    }
+
+    private var pairedBluetoothDevicesSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("PAIRED BLUETOOTH DEVICES // CONNECT & DISCONNECT")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.signalEmerald)
+
+                Spacer()
+
+                Text("\(registry.pairedBluetoothDevices.count) PAIRED")
+                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.slateDim)
+            }
+            .padding(.top, 2)
+
+            LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
+                ForEach(registry.pairedBluetoothDevices) { device in
+                    let isBusy = registry.connectingBluetoothDeviceID == device.id
+                    let isPreferred = registry.selectedBluetoothDeviceID == device.id
+                    let accent = TactilePalette.signalEmerald
+
+                    Button {
+                        Task {
+                            await registry.toggleBluetoothDevice(device)
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            TactileVectorIconView(
+                                switchID: "SW.17",
+                                isActive: device.isConnected,
+                                accentColor: accent,
+                                dimension: 36.0
+                            )
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(device.name.uppercased())
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(TactilePalette.ivoryText)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(
+                                            isBusy
+                                                ? TactilePalette.tungstenAmber
+                                                : (device.isConnected ? accent : TactilePalette.slateDim.opacity(0.6))
+                                        )
+                                        .frame(width: 5, height: 5)
+
+                                    Text(
+                                        isBusy
+                                            ? "LINKING RF..."
+                                            : (device.isConnected ? "\(device.kindBadge) · CONNECTED" : "\(device.kindBadge) · STANDBY")
+                                    )
+                                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                                    .foregroundStyle(
+                                        isBusy
+                                            ? TactilePalette.tungstenAmber
+                                            : (device.isConnected ? accent : TactilePalette.silverMuted)
+                                    )
+                                    .lineLimit(1)
+                                }
+                            }
+
+                            Spacer(minLength: 4)
+
+                            TactileTogglePillView(
+                                isOn: device.isConnected,
+                                isMomentary: false,
+                                accentColor: accent
+                            )
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppConfiguration.LayoutMetrics.cardCornerRadius)
+                                .fill(device.isConnected ? TactilePalette.elevatedPanel : TactilePalette.graphitePanel)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppConfiguration.LayoutMetrics.cardCornerRadius)
+                                .strokeBorder(
+                                    device.isConnected
+                                        ? accent.opacity(0.75)
+                                        : (isPreferred ? TactilePalette.borderSteel : TactilePalette.gridLine),
+                                    lineWidth: device.isConnected ? 1.2 : 0.9
+                                )
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Conectar ou desconectar \(device.name) (\(device.address))")
+                }
+            }
         }
     }
 

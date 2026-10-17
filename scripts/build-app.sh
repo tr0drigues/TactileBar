@@ -144,6 +144,8 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<EOF
     <true/>
     <key>NSAppleEventsUsageDescription</key>
     <string>TactileBar precisa de permissão de automação para alternar o Modo Escuro, Finder, Lixeira e reprodutores de mídia.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>TactileBar utiliza o Bluetooth para conectar e desconectar rapidamente seus fones e controles pareados.</string>
 </dict>
 </plist>
 EOF

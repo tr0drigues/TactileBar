@@ -369,14 +369,38 @@ public enum TactileSwitchCatalog {
             ),
             ConfigurableTactileSwitch(
                 id: "SW.17",
-                title: "AIRPODS CONNECT",
+                title: "BT AUDIO LINK",
                 domain: .signal,
-                sfSymbolName: "airpodspro",
-                subsystemLabel: "IOBluetooth / BLE",
-                initialState: .off(statusText: "READY TO PAIR"),
+                sfSymbolName: "headphones",
+                subsystemLabel: "IOBluetooth Audio/RF",
+                initialState: .off(statusText: "PAIRED STANDBY"),
                 onTriggerHandler: { item in
-                    let next = !item.state.isEnabled
-                    item.state = next ? .on(statusText: "RF LINKED") : .off(statusText: "DISCONNECTED")
+                    let devices = BluetoothDeviceService.listPairedDevices()
+                    let preferredID = UserDefaults.standard.string(forKey: SwitchRegistry.preferredBluetoothStorageKey) ?? ""
+                    guard let target = devices.first(where: { $0.id == preferredID }) ?? devices.first else {
+                        NSWorkspace.shared.open(AppConfiguration.SystemPreferenceURLs.bluetoothPrivacy)
+                        item.state = .off(statusText: "NO PAIRED BT")
+                        return
+                    }
+                    let shouldConnect = !target.isConnected
+                    item.state = .busy(progressText: shouldConnect ? "LINKING \(target.name.uppercased())..." : "DISCONNECTING...")
+                    let ok = await BluetoothDeviceService.setConnection(address: target.address, connect: shouldConnect)
+                    let updated = BluetoothDeviceService.listPairedDevices().first(where: { $0.id == target.id })
+                    let isNowConnected = updated?.isConnected ?? (ok ? shouldConnect : target.isConnected)
+                    item.state = isNowConnected
+                        ? .on(statusText: "\(target.name.uppercased()) · ON")
+                        : .off(statusText: "\(target.name.uppercased()) · OFF")
+                },
+                onRefreshHandler: { item in
+                    let devices = BluetoothDeviceService.listPairedDevices()
+                    let preferredID = UserDefaults.standard.string(forKey: SwitchRegistry.preferredBluetoothStorageKey) ?? ""
+                    if let connected = devices.first(where: { $0.isConnected }) {
+                        item.state = .on(statusText: "\(connected.name.uppercased()) · ON")
+                    } else if let target = devices.first(where: { $0.id == preferredID }) ?? devices.first {
+                        item.state = .off(statusText: "\(target.name.uppercased()) · OFF")
+                    } else {
+                        item.state = .off(statusText: "NO PAIRED BT")
+                    }
                 }
             ),
             ConfigurableTactileSwitch(
