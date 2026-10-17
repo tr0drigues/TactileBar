@@ -3,8 +3,16 @@ import SwiftUI
 
 public enum MenuBarTelemetryIcon {
     @MainActor
+    private static var statusBarImageCache: [Int: NSImage] = [:]
+
+    @MainActor
     public static func makeStatusBarImage(activeCount: Int) -> NSImage {
-        let hasBadge = activeCount > 0
+        let clampedCount = max(0, min(activeCount, 99))
+        if let cached = statusBarImageCache[clampedCount] {
+            return cached
+        }
+
+        let hasBadge = clampedCount > 0
         let width: CGFloat = hasBadge ? 40.0 : 20.0
         let height: CGFloat = 18.0
         let size = NSSize(width: width, height: height)
@@ -122,6 +130,7 @@ public enum MenuBarTelemetryIcon {
         }
 
         image.isTemplate = false
+        statusBarImageCache[clampedCount] = image
         return image
     }
 

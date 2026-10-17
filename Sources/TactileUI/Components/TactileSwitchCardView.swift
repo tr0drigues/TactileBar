@@ -90,11 +90,15 @@ public struct TactileSwitchCardView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.title)
+        .accessibilityValue("\(item.state.statusSubtitle), \(isSwitchActive ? "Active" : "Inactive")")
+        .accessibilityAddTraits(.isButton)
         .help("\(item.id) · \(item.title) (\(item.subsystemLabel))")
     }
 }
 
-public struct TactileTogglePillView: View {
+public struct TactileTogglePillView: View, Equatable {
     let isOn: Bool
     let isMomentary: Bool
     let accentColor: Color

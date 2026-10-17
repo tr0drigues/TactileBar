@@ -72,4 +72,15 @@ final class TactileBarTests: XCTestCase {
         XCTAssertFalse(snapshot.memoryFormattedRatio.isEmpty)
         XCTAssertFalse(snapshot.thermalStateLabel.isEmpty)
     }
+
+    func testRegistryDomainCounts() {
+        let switches = TactileSwitchCatalog.makeAllSwitches()
+        let registry = SwitchRegistry(switches: switches)
+
+        XCTAssertEqual(registry.domainCounts(for: .power).total, 5)
+        XCTAssertEqual(registry.domainCounts(for: .optics).total, 4)
+        XCTAssertEqual(registry.domainCounts(for: .workspace).total, 6)
+        XCTAssertEqual(registry.domainCounts(for: .signal).total, 3)
+        XCTAssertEqual(registry.domainCounts(for: .security).total, 8)
+    }
 }

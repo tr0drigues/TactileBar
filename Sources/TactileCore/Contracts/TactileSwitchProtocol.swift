@@ -1,7 +1,7 @@
 import Foundation
 
 @MainActor
-public protocol TactileSwitchProtocol: AnyObject, Identifiable {
+public protocol TactileSwitchProtocol: AnyObject, Identifiable, Sendable {
     /// Identificador único de telemetria (ex: "SW.01" a "SW.26").
     var id: String { get }
     /// Nome principal em caixa-alta exibido no cartão (ex: "KEEP AWAKE").

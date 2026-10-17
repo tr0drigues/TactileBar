@@ -12,18 +12,19 @@ public final class SwitchRegistry {
     public var availableUpdate: ReleaseUpdateInfo?
     public private(set) var mountedVolumes: [MountedVolumeInfo] = []
     public var selectedVolumeID: String = "/"
+    public var isShowingVolumeList: Bool = false
     public private(set) var pairedBluetoothDevices: [BluetoothDeviceItem] = []
     public var selectedBluetoothDeviceID: String = "" {
         didSet {
-            userDefaults.set(selectedBluetoothDeviceID, forKey: preferredBluetoothStorageKey)
+            userDefaults.set(selectedBluetoothDeviceID, forKey: Self.preferredBluetoothStorageKey)
         }
     }
+    public var isShowingBluetoothList: Bool = false
     public private(set) var connectingBluetoothDeviceID: String?
     public private(set) var totalTriggerCount: Int
     public private(set) var hardwareTelemetry: SystemHardwareTelemetrySnapshot = .initial
 
     public static let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
-    private let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
     private let triggerCountStorageKey = "studio.tactile.TactileBar.totalTriggerCount"
     private let userDefaults: UserDefaults
 
@@ -43,7 +44,7 @@ public final class SwitchRegistry {
 
         let initialBT = BluetoothDeviceService.listPairedDevices()
         self.pairedBluetoothDevices = initialBT
-        let savedBT = userDefaults.string(forKey: preferredBluetoothStorageKey) ?? ""
+        let savedBT = userDefaults.string(forKey: Self.preferredBluetoothStorageKey) ?? ""
         if initialBT.contains(where: { $0.id == savedBT }) {
             self.selectedBluetoothDeviceID = savedBT
         } else if let firstBT = initialBT.first {
@@ -66,9 +67,9 @@ public final class SwitchRegistry {
         let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedQuery.isEmpty {
             return switches.filter { item in
-                item.title.localizedCaseInsensitiveContains(trimmedQuery)
-                    || item.id.localizedCaseInsensitiveContains(trimmedQuery)
-                    || item.subsystemLabel.localizedCaseInsensitiveContains(trimmedQuery)
+                item.title.localizedStandardContains(trimmedQuery)
+                    || item.id.localizedStandardContains(trimmedQuery)
+                    || item.subsystemLabel.localizedStandardContains(trimmedQuery)
             }
         }
         return switches.filter { item in
@@ -80,17 +81,32 @@ public final class SwitchRegistry {
         switches.filter { $0.state.isEnabled }.count
     }
 
+    public func domainCounts(for domain: SwitchDomain) -> (active: Int, total: Int) {
+        var active = 0
+        var total = 0
+        for item in switches where item.domain == domain {
+            total += 1
+            if item.state.isEnabled {
+                active += 1
+            }
+        }
+        return (active, total)
+    }
+
     public func triggerSwitch(withID id: String) async {
         guard let target = switches.first(where: { $0.id == id }) else { return }
         await target.trigger()
         totalTriggerCount += 1
         userDefaults.set(totalTriggerCount, forKey: triggerCountStorageKey)
         refreshDiskVolumes()
+        refreshHardwareTelemetry()
     }
 
     public func refreshDiskVolumes() {
         let updated = DiskVolumeTelemetryService.listMountedVolumes()
-        mountedVolumes = updated
+        if mountedVolumes != updated {
+            mountedVolumes = updated
+        }
         if !updated.contains(where: { $0.id == selectedVolumeID }), let first = updated.first {
             selectedVolumeID = first.id
         }
@@ -102,8 +118,6 @@ public final class SwitchRegistry {
         }
         return idx + 1
     }
-
-    public var isShowingVolumeList: Bool = false
 
     public func cycleNextVolume() {
         guard !mountedVolumes.isEmpty else { return }
@@ -157,11 +171,11 @@ public final class SwitchRegistry {
         pairedBluetoothDevices.filter(\.isConnected).count
     }
 
-    public var isShowingBluetoothList: Bool = false
-
     public func refreshBluetoothDevices() {
         let updated = BluetoothDeviceService.listPairedDevices()
-        pairedBluetoothDevices = updated
+        if pairedBluetoothDevices != updated {
+            pairedBluetoothDevices = updated
+        }
         if !updated.contains(where: { $0.id == selectedBluetoothDeviceID }), let first = updated.first {
             selectedBluetoothDeviceID = first.id
         }
@@ -217,15 +231,44 @@ public final class SwitchRegistry {
     }
 
     public func refreshHardwareTelemetry() {
-        hardwareTelemetry = HardwareTelemetryService.shared.captureSnapshot()
+        let updated = HardwareTelemetryService.shared.captureSnapshot()
+        if hardwareTelemetry != updated {
+            hardwareTelemetry = updated
+        }
+    }
+
+    private func refreshSwitch(withID id: String) async {
+        guard let item = switches.first(where: { $0.id == id }) else { return }
+        await item.refreshState()
     }
 
     public func refreshAll() async {
         refreshHardwareTelemetry()
         refreshDiskVolumes()
         refreshBluetoothDevices()
-        for item in switches {
-            await item.refreshState()
+
+        let activeDomain = selectedDomainFilter
+        let primaryIDs = switches
+            .filter { activeDomain == nil || $0.domain == activeDomain }
+            .map(\.id)
+        let secondaryIDs = switches
+            .filter { activeDomain != nil && $0.domain != activeDomain }
+            .map(\.id)
+
+        await withTaskGroup(of: Void.self) { group in
+            for id in primaryIDs {
+                group.addTask { @MainActor [weak self] in
+                    await self?.refreshSwitch(withID: id)
+                }
+            }
+        }
+
+        await withTaskGroup(of: Void.self) { group in
+            for id in secondaryIDs {
+                group.addTask { @MainActor [weak self] in
+                    await self?.refreshSwitch(withID: id)
+                }
+            }
         }
     }
 }

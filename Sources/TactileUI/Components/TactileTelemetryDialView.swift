@@ -9,347 +9,400 @@ public struct TactileTelemetryDialView: View {
         self.registry = registry
     }
 
-    private var activeVolume: MountedVolumeInfo? {
-        registry.selectedVolume
-    }
-
-    private var activeBluetooth: BluetoothDeviceItem? {
-        registry.selectedBluetoothDevice
-    }
-
     public var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            // Left Deck: Contained Stepper + Vertical Expandable Bluetooth Device Control
-            bluetoothTelemetryColumn
+            BluetoothDeckColumnView(registry: registry)
                 .frame(maxWidth: .infinity)
 
-            // Centerpiece: Concentric Rotary Telemetry Disk (Visão do Disco)
-            concentricDialCenterpiece
+            ConcentricTelemetryDialCanvasView(registry: registry)
 
-            // Right Deck: Contained Stepper + Vertical Expandable Disk Volume Control
-            storageTelemetryColumn
+            StorageDeckColumnView(registry: registry)
                 .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(TactilePalette.graphitePanel.opacity(0.65))
     }
+}
 
-    // MARK: - Left Column: Bluetooth & RF Selector
+// MARK: - Lightweight Zero-GeometryReader Progress Bar
 
-    private var bluetoothTelemetryColumn: some View {
+private struct TactileLinearBarView: View, Equatable {
+    let ratio: Double
+    let fillColor: Color
+    let trackColor: Color
+    let height: CGFloat
+
+    init(
+        ratio: Double,
+        fillColor: Color,
+        trackColor: Color = TactilePalette.graphitePanel,
+        height: CGFloat = 4.0
+    ) {
+        self.ratio = min(max(ratio, 0.02), 1.0)
+        self.fillColor = fillColor
+        self.trackColor = trackColor
+        self.height = height
+    }
+
+    var body: some View {
+        Canvas { context, size in
+            let corner = size.height / 2.0
+            let fullRect = CGRect(origin: .zero, size: size)
+            context.fill(
+                Path(roundedRect: fullRect, cornerRadius: corner),
+                with: .color(trackColor)
+            )
+
+            let fillWidth = max(size.height, size.width * ratio)
+            let fillRect = CGRect(x: 0, y: 0, width: min(fillWidth, size.width), height: size.height)
+            context.fill(
+                Path(roundedRect: fillRect, cornerRadius: corner),
+                with: .color(fillColor)
+            )
+        }
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Left Deck: Bluetooth RF Selector + CPU/RAM Telemetry
+
+private struct BluetoothDeckColumnView: View {
+    @Bindable var registry: SwitchRegistry
+
+    private var activeBluetooth: BluetoothDeviceItem? {
+        registry.selectedBluetoothDevice
+    }
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 4) {
-                Button {
-                    registry.cyclePreviousBluetoothDevice()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(TactilePalette.silverMuted)
-                        .frame(width: 18, height: 21)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(TactilePalette.obsidianBackground)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                                )
-                        )
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Previous paired Bluetooth device")
-
-                Button {
-                    registry.isShowingBluetoothList.toggle()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(String(format: "%02d/%02d", registry.selectedBluetoothIndex, registry.pairedBluetoothDevices.count))
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.signalEmerald)
-
-                        Text(activeBluetooth?.name.uppercased() ?? "NO BT DEVICE")
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.ivoryText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-
-                        Spacer(minLength: 2)
-
-                        Image(systemName: registry.isShowingBluetoothList ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 7.5, weight: .bold))
-                            .foregroundStyle(TactilePalette.signalEmerald)
-                    }
-                    .padding(.horizontal, 6)
-                    .frame(maxWidth: .infinity, minHeight: 21, maxHeight: 21)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(
-                                registry.isShowingBluetoothList
-                                    ? TactilePalette.signalEmerald.opacity(0.16)
-                                    : TactilePalette.obsidianBackground
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(
-                                        registry.isShowingBluetoothList
-                                            ? TactilePalette.signalEmerald
-                                            : TactilePalette.borderSteel,
-                                        lineWidth: 0.9
-                                    )
-                            )
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Expand vertical list of paired Bluetooth devices")
-
-                Button {
-                    registry.cycleNextBluetoothDevice()
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(TactilePalette.silverMuted)
-                        .frame(width: 18, height: 21)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(TactilePalette.obsidianBackground)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                                )
-                        )
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Next paired Bluetooth device")
-            }
+            stepperBar
 
             if registry.isShowingBluetoothList {
-                ScrollView(.vertical, showsIndicators: true) {
-                    VStack(spacing: 4) {
-                        ForEach(Array(registry.pairedBluetoothDevices.enumerated()), id: \.element.id) { idx, device in
-                            let isSelected = device.id == activeBluetooth?.id
-                            let accent = device.isConnected ? TactilePalette.signalEmerald : TactilePalette.tungstenAmber
-
-                            Button {
-                                registry.selectedBluetoothDeviceID = device.id
-                                registry.isShowingBluetoothList = false
-                                Task {
-                                    if let btSwitch = registry.switches.first(where: { $0.id == "SW.17" }) {
-                                        await btSwitch.refreshState()
-                                    }
-                                }
-                            } label: {
-                                HStack(spacing: 5) {
-                                    Text(String(format: "%02d", idx + 1))
-                                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(isSelected ? accent : TactilePalette.slateDim)
-
-                                    Text(device.name.uppercased())
-                                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(isSelected ? TactilePalette.ivoryText : TactilePalette.silverMuted)
-                                        .lineLimit(1)
-                                        .truncationMode(.tail)
-
-                                    Spacer(minLength: 2)
-
-                                    Text(device.isConnected ? "ON" : "OFF")
-                                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(device.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim)
-                                }
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 4.5)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(isSelected ? accent.opacity(0.18) : TactilePalette.obsidianBackground)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .strokeBorder(isSelected ? accent : TactilePalette.gridLine, lineWidth: 0.8)
-                                        )
-                                )
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                .frame(height: 112)
+                deviceDropdownList
             } else {
-                if let bt = activeBluetooth {
-                    let isBusy = registry.connectingBluetoothDeviceID == bt.id
-                    let statusColor = isBusy
-                        ? TactilePalette.tungstenAmber
-                        : (bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.silverMuted)
-
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack {
-                            Text("\(bt.kindBadge) // \(bt.name.uppercased())")
-                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.tungstenAmber)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                            Spacer(minLength: 2)
-                            Circle()
-                                .fill(bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim)
-                                .frame(width: 6, height: 6)
-                        }
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(TactilePalette.obsidianBackground)
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim.opacity(0.35))
-                                    .frame(width: bt.isConnected ? geo.size.width : geo.size.width * 0.22)
-                            }
-                        }
-                        .frame(height: 5)
-
-                        HStack {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(isBusy ? "LINKING RF..." : (bt.isConnected ? "RF CONNECTED" : "STANDBY"))
-                                    .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(statusColor)
-                                Text(bt.address)
-                                    .font(.system(size: 7.5, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(TactilePalette.slateDim)
-                                    .lineLimit(1)
-                            }
-
-                            Spacer(minLength: 2)
-
-                            Button {
-                                Task {
-                                    await registry.toggleSelectedBluetoothDevice()
-                                }
-                            } label: {
-                                Text(bt.isConnected ? "DISCONNECT" : "CONNECT")
-                                    .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3.5)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .fill(
-                                                bt.isConnected
-                                                    ? TactilePalette.internationalOrange.opacity(0.22)
-                                                    : TactilePalette.signalEmerald.opacity(0.22)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 3)
-                                                    .strokeBorder(
-                                                        bt.isConnected ? TactilePalette.internationalOrange : TactilePalette.signalEmerald,
-                                                        lineWidth: 0.8
-                                                    )
-                                            )
-                                    )
-                                    .foregroundStyle(bt.isConnected ? TactilePalette.internationalOrange : TactilePalette.signalEmerald)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help(bt.isConnected ? "Disconnect \(bt.name)" : "Connect \(bt.name)")
-                        }
-                    }
-                    .padding(6.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 5)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                            )
-                    )
-                }
-
-                let hw = registry.hardwareTelemetry
-                HStack(spacing: 5) {
-                    VStack(alignment: .leading, spacing: 2.5) {
-                        HStack {
-                            Text("CPU.LOAD")
-                                .font(.system(size: 6.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.slateDim)
-                            Spacer(minLength: 2)
-                            Text("\(hw.cpuTotalPercent)%")
-                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.tungstenAmber)
-                        }
-
-                        Text("USR \(hw.cpuUserPercent) · SYS \(hw.cpuSystemPercent)%")
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.ivoryText)
-                            .lineLimit(1)
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(TactilePalette.graphitePanel)
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(TactilePalette.tungstenAmber)
-                                    .frame(width: max(3, geo.size.width * hw.cpuTotalRatio))
-                            }
-                        }
-                        .frame(height: 3.5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(4.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.tungstenAmber.opacity(0.45), lineWidth: 0.8)
-                            )
-                    )
-
-                    VStack(alignment: .leading, spacing: 2.5) {
-                        HStack {
-                            Text("MEM.RAM")
-                                .font(.system(size: 6.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.slateDim)
-                            Spacer(minLength: 2)
-                            Text("\(hw.memoryUsedPercent)%")
-                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.signalEmerald)
-                        }
-
-                        Text(hw.memoryFormattedRatio)
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.ivoryText)
-                            .lineLimit(1)
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(TactilePalette.graphitePanel)
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(TactilePalette.signalEmerald)
-                                    .frame(width: max(3, geo.size.width * hw.memoryUsedRatio))
-                            }
-                        }
-                        .frame(height: 3.5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(4.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.signalEmerald.opacity(0.45), lineWidth: 0.8)
-                            )
-                    )
-                }
+                activeDeviceCard
+                cpuAndMemoryGauges
             }
         }
     }
 
-    // MARK: - Centerpiece: Triple Concentric Rotary Telemetry Disk
+    private var stepperBar: some View {
+        HStack(spacing: 4) {
+            Button(action: registry.cyclePreviousBluetoothDevice) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 8.5, weight: .bold))
+                    .foregroundStyle(TactilePalette.silverMuted)
+                    .frame(width: 18, height: 21)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(TactilePalette.obsidianBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                            )
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Previous paired Bluetooth device")
+            .help("Previous paired Bluetooth device")
 
-    private var concentricDialCenterpiece: some View {
-        Button {
-            registry.cycleNextVolume()
-        } label: {
-            let hw = registry.hardwareTelemetry
+            Button {
+                registry.isShowingBluetoothList.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Text(String(format: "%02d/%02d", registry.selectedBluetoothIndex, registry.pairedBluetoothDevices.count))
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.signalEmerald)
+
+                    Text(activeBluetooth?.name.uppercased() ?? "NO BT DEVICE")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.ivoryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+
+                    Spacer(minLength: 2)
+
+                    Image(systemName: registry.isShowingBluetoothList ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 7.5, weight: .bold))
+                        .foregroundStyle(TactilePalette.signalEmerald)
+                }
+                .padding(.horizontal, 6)
+                .frame(maxWidth: .infinity, minHeight: 21, maxHeight: 21)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            registry.isShowingBluetoothList
+                                ? TactilePalette.signalEmerald.opacity(0.16)
+                                : TactilePalette.obsidianBackground
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(
+                                    registry.isShowingBluetoothList
+                                        ? TactilePalette.signalEmerald
+                                        : TactilePalette.borderSteel,
+                                    lineWidth: 0.9
+                                )
+                        )
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Select Bluetooth device")
+            .accessibilityValue(activeBluetooth?.name ?? "None")
+            .help("Expand vertical list of paired Bluetooth devices")
+
+            Button(action: registry.cycleNextBluetoothDevice) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8.5, weight: .bold))
+                    .foregroundStyle(TactilePalette.silverMuted)
+                    .frame(width: 18, height: 21)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(TactilePalette.obsidianBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                            )
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Next paired Bluetooth device")
+            .help("Next paired Bluetooth device")
+        }
+    }
+
+    private var deviceDropdownList: some View {
+        ScrollView(.vertical) {
+            VStack(spacing: 4) {
+                ForEach(registry.pairedBluetoothDevices) { device in
+                    let isSelected = device.id == activeBluetooth?.id
+                    let accent = device.isConnected ? TactilePalette.signalEmerald : TactilePalette.tungstenAmber
+
+                    Button {
+                        registry.selectedBluetoothDeviceID = device.id
+                        registry.isShowingBluetoothList = false
+                        Task {
+                            if let btSwitch = registry.switches.first(where: { $0.id == "SW.17" }) {
+                                await btSwitch.refreshState()
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(device.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim)
+                                .frame(width: 5, height: 5)
+
+                            Text(device.name.uppercased())
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .foregroundStyle(isSelected ? TactilePalette.ivoryText : TactilePalette.silverMuted)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+
+                            Spacer(minLength: 2)
+
+                            Text(device.isConnected ? "ON" : "OFF")
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(device.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(isSelected ? accent.opacity(0.18) : TactilePalette.obsidianBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .strokeBorder(isSelected ? accent : TactilePalette.gridLine, lineWidth: 0.8)
+                                )
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .scrollIndicators(.automatic)
+        .frame(height: 112)
+    }
+
+    @ViewBuilder
+    private var activeDeviceCard: some View {
+        if let bt = activeBluetooth {
+            let isBusy = registry.connectingBluetoothDeviceID == bt.id
+            let statusColor = isBusy
+                ? TactilePalette.tungstenAmber
+                : (bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.silverMuted)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text("\(bt.kindBadge) // \(bt.name.uppercased())")
+                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.tungstenAmber)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 2)
+                    Circle()
+                        .fill(bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim)
+                        .frame(width: 6, height: 6)
+                }
+
+                TactileLinearBarView(
+                    ratio: bt.isConnected ? 1.0 : 0.22,
+                    fillColor: bt.isConnected ? TactilePalette.signalEmerald : TactilePalette.slateDim.opacity(0.35),
+                    trackColor: TactilePalette.obsidianBackground,
+                    height: 5.0
+                )
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(isBusy ? "LINKING RF..." : (bt.isConnected ? "RF CONNECTED" : "STANDBY"))
+                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                            .foregroundStyle(statusColor)
+                        Text(bt.address)
+                            .font(.system(size: 7.5, weight: .regular, design: .monospaced))
+                            .foregroundStyle(TactilePalette.slateDim)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 2)
+
+                    Button {
+                        Task {
+                            await registry.toggleSelectedBluetoothDevice()
+                        }
+                    } label: {
+                        Text(bt.isConnected ? "DISCONNECT" : "CONNECT")
+                            .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(
+                                        bt.isConnected
+                                            ? TactilePalette.internationalOrange.opacity(0.22)
+                                            : TactilePalette.signalEmerald.opacity(0.22)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .strokeBorder(
+                                                bt.isConnected ? TactilePalette.internationalOrange : TactilePalette.signalEmerald,
+                                                lineWidth: 0.8
+                                            )
+                                    )
+                            )
+                            .foregroundStyle(bt.isConnected ? TactilePalette.internationalOrange : TactilePalette.signalEmerald)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(bt.isConnected ? "Disconnect \(bt.name)" : "Connect \(bt.name)")
+                }
+            }
+            .padding(6.5)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(TactilePalette.obsidianBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                    )
+            )
+        }
+    }
+
+    private var cpuAndMemoryGauges: some View {
+        let hw = registry.hardwareTelemetry
+        return HStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 2.5) {
+                HStack {
+                    Text("CPU.LOAD")
+                        .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.slateDim)
+                    Spacer(minLength: 2)
+                    Text("\(hw.cpuTotalPercent)%")
+                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.tungstenAmber)
+                }
+
+                Text("USR \(hw.cpuUserPercent) · SYS \(hw.cpuSystemPercent)%")
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.ivoryText)
+                    .lineLimit(1)
+
+                TactileLinearBarView(
+                    ratio: hw.cpuTotalRatio,
+                    fillColor: TactilePalette.tungstenAmber,
+                    height: 3.5
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(4.5)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(TactilePalette.obsidianBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(TactilePalette.tungstenAmber.opacity(0.45), lineWidth: 0.8)
+                    )
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("CPU Load")
+            .accessibilityValue("\(hw.cpuTotalPercent) percent")
+
+            VStack(alignment: .leading, spacing: 2.5) {
+                HStack {
+                    Text("MEM.RAM")
+                        .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.slateDim)
+                    Spacer(minLength: 2)
+                    Text("\(hw.memoryUsedPercent)%")
+                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.signalEmerald)
+                }
+
+                Text(hw.memoryFormattedRatio)
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.ivoryText)
+                    .lineLimit(1)
+
+                TactileLinearBarView(
+                    ratio: hw.memoryUsedRatio,
+                    fillColor: TactilePalette.signalEmerald,
+                    height: 3.5
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(4.5)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(TactilePalette.obsidianBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(TactilePalette.signalEmerald.opacity(0.45), lineWidth: 0.8)
+                    )
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Memory Pressure")
+            .accessibilityValue("\(hw.memoryUsedPercent) percent, \(hw.memoryFormattedRatio)")
+        }
+    }
+}
+
+// MARK: - Centerpiece: Triple Concentric Rotary Telemetry Disk
+
+private struct ConcentricTelemetryDialCanvasView: View {
+    @Bindable var registry: SwitchRegistry
+
+    private var activeVolume: MountedVolumeInfo? {
+        registry.selectedVolume
+    }
+
+    var body: some View {
+        let hw = registry.hardwareTelemetry
+        Button(action: registry.cycleNextVolume) {
             ZStack {
                 Canvas { context, size in
                     let center = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -378,7 +431,7 @@ public struct TactileTelemetryDialView: View {
                         context.stroke(Path(ellipseIn: ringRect), with: .color(TactilePalette.gridLine), lineWidth: 0.85)
                     }
 
-                    // Ring 1 (Outer Telemetry Ring): CPU Load Arc (Amber)
+                    // Ring 1: CPU Load Arc (Amber)
                     var cpuTrack = Path()
                     cpuTrack.addArc(center: center, radius: rCpuArc, startAngle: .degrees(-90), endAngle: .degrees(270), clockwise: false)
                     context.stroke(cpuTrack, with: .color(TactilePalette.tungstenAmber.opacity(0.15)), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
@@ -393,7 +446,7 @@ public struct TactileTelemetryDialView: View {
                     )
                     context.stroke(cpuFill, with: .color(TactilePalette.tungstenAmber), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
 
-                    // Ring 2 (Middle Telemetry Ring): Memory RAM Saturation Arc (Emerald)
+                    // Ring 2: Memory RAM Saturation Arc (Emerald)
                     var ramTrack = Path()
                     ramTrack.addArc(center: center, radius: rRamArc, startAngle: .degrees(-90), endAngle: .degrees(270), clockwise: false)
                     context.stroke(ramTrack, with: .color(TactilePalette.signalEmerald.opacity(0.15)), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
@@ -408,7 +461,7 @@ public struct TactileTelemetryDialView: View {
                     )
                     context.stroke(ramFill, with: .color(TactilePalette.signalEmerald), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
 
-                    // Ring 3 (Inner Telemetry Ring): Storage Disk Saturation Arc (Cyan)
+                    // Ring 3: Storage Disk Saturation Arc (Cyan)
                     if let vol = activeVolume {
                         var diskTrack = Path()
                         diskTrack.addArc(
@@ -526,7 +579,7 @@ public struct TactileTelemetryDialView: View {
                         .foregroundStyle(TactilePalette.signalEmerald)
 
                     if let vol = activeVolume {
-                        Text("\(Int(vol.usedPercentage * 100))%")
+                        Text(vol.usedPercentage, format: .percent.precision(.fractionLength(0)))
                             .font(.system(size: 11.5, weight: .heavy, design: .monospaced))
                             .foregroundStyle(TactilePalette.ivoryText)
 
@@ -547,307 +600,329 @@ public struct TactileTelemetryDialView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Concentric Hardware Telemetry Dial")
+        .accessibilityValue("CPU \(hw.cpuTotalPercent)%, RAM \(hw.memoryUsedPercent)%, Volume \(activeVolume?.name ?? "None")")
+        .accessibilityAddTraits(.isButton)
         .help("Concentric Telemetry Rings — Outer: 26 Switches | Amber: CPU Load | Emerald: RAM Usage | Cyan: Disk Saturation. Click core to cycle storage volumes.")
     }
+}
 
-    // MARK: - Right Column: Storage Volumes Selector
+// MARK: - Right Deck: Storage Volumes Selector + Power/Thermal Telemetry
 
-    private var storageTelemetryColumn: some View {
+private struct StorageDeckColumnView: View {
+    @Bindable var registry: SwitchRegistry
+
+    private var activeVolume: MountedVolumeInfo? {
+        registry.selectedVolume
+    }
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 4) {
-                Button {
-                    registry.cyclePreviousVolume()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(TactilePalette.silverMuted)
-                        .frame(width: 18, height: 21)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(TactilePalette.obsidianBackground)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                                )
-                        )
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Previous storage volume")
+            stepperBar
 
-                Button {
-                    registry.isShowingVolumeList.toggle()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(String(format: "%02d/%02d", registry.selectedVolumeIndex, registry.mountedVolumes.count))
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.oscilloscopeCyan)
+            if registry.isShowingVolumeList {
+                volumeDropdownList
+            } else {
+                activeVolumeCard
+                powerAndThermalGauges
+            }
+        }
+    }
 
-                        Text(activeVolume?.name.uppercased() ?? "NO DISK")
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.ivoryText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-
-                        Spacer(minLength: 2)
-
-                        Image(systemName: registry.isShowingVolumeList ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 7.5, weight: .bold))
-                            .foregroundStyle(TactilePalette.oscilloscopeCyan)
-                    }
-                    .padding(.horizontal, 6)
-                    .frame(maxWidth: .infinity, minHeight: 21, maxHeight: 21)
+    private var stepperBar: some View {
+        HStack(spacing: 4) {
+            Button(action: registry.cyclePreviousVolume) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 8.5, weight: .bold))
+                    .foregroundStyle(TactilePalette.silverMuted)
+                    .frame(width: 18, height: 21)
                     .background(
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(
-                                registry.isShowingVolumeList
-                                    ? TactilePalette.oscilloscopeCyan.opacity(0.16)
-                                    : TactilePalette.obsidianBackground
-                            )
+                            .fill(TactilePalette.obsidianBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(
-                                        registry.isShowingVolumeList
-                                            ? TactilePalette.oscilloscopeCyan
-                                            : TactilePalette.borderSteel,
-                                        lineWidth: 0.9
-                                    )
+                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
                             )
                     )
                     .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Expand vertical list of mounted storage volumes")
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Previous storage volume")
+            .help("Previous storage volume")
 
-                Button {
-                    registry.cycleNextVolume()
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(TactilePalette.silverMuted)
-                        .frame(width: 18, height: 21)
+            Button {
+                registry.isShowingVolumeList.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Text(String(format: "%02d/%02d", registry.selectedVolumeIndex, registry.mountedVolumes.count))
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.oscilloscopeCyan)
+
+                    Text(activeVolume?.name.uppercased() ?? "NO DISK")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.ivoryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+
+                    Spacer(minLength: 2)
+
+                    Image(systemName: registry.isShowingVolumeList ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 7.5, weight: .bold))
+                        .foregroundStyle(TactilePalette.oscilloscopeCyan)
+                }
+                .padding(.horizontal, 6)
+                .frame(maxWidth: .infinity, minHeight: 21, maxHeight: 21)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            registry.isShowingVolumeList
+                                ? TactilePalette.oscilloscopeCyan.opacity(0.16)
+                                : TactilePalette.obsidianBackground
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(
+                                    registry.isShowingVolumeList
+                                        ? TactilePalette.oscilloscopeCyan
+                                        : TactilePalette.borderSteel,
+                                    lineWidth: 0.9
+                                )
+                        )
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Select storage volume")
+            .accessibilityValue(activeVolume?.name ?? "None")
+            .help("Expand vertical list of mounted storage volumes")
+
+            Button(action: registry.cycleNextVolume) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8.5, weight: .bold))
+                    .foregroundStyle(TactilePalette.silverMuted)
+                    .frame(width: 18, height: 21)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(TactilePalette.obsidianBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                            )
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Next storage volume")
+            .help("Next storage volume")
+        }
+    }
+
+    private var volumeDropdownList: some View {
+        ScrollView(.vertical) {
+            VStack(spacing: 4) {
+                ForEach(registry.mountedVolumes) { volume in
+                    let isSelected = volume.id == activeVolume?.id
+                    let badgeColor = volume.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan
+
+                    Button {
+                        registry.selectedVolumeID = volume.id
+                        registry.isShowingVolumeList = false
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(volume.kindBadge)
+                                .font(.system(size: 7, weight: .bold, design: .monospaced))
+                                .foregroundStyle(isSelected ? badgeColor : TactilePalette.slateDim)
+
+                            Text(volume.name.uppercased())
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .foregroundStyle(isSelected ? TactilePalette.ivoryText : TactilePalette.silverMuted)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+
+                            Spacer(minLength: 2)
+
+                            Text(volume.formattedFreeGB)
+                                .font(.system(size: 7.5, weight: .regular, design: .monospaced))
+                                .foregroundStyle(badgeColor)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4.5)
                         .background(
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(TactilePalette.obsidianBackground)
+                                .fill(isSelected ? badgeColor.opacity(0.18) : TactilePalette.obsidianBackground)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 4)
-                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                        .strokeBorder(isSelected ? badgeColor : TactilePalette.gridLine, lineWidth: 0.8)
                                 )
                         )
                         .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .help("Next storage volume")
             }
+        }
+        .scrollIndicators(.automatic)
+        .frame(height: 112)
+    }
 
-            if registry.isShowingVolumeList {
-                ScrollView(.vertical, showsIndicators: true) {
-                    VStack(spacing: 4) {
-                        ForEach(Array(registry.mountedVolumes.enumerated()), id: \.element.id) { idx, volume in
-                            let isSelected = volume.id == activeVolume?.id
-                            let badgeColor = volume.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan
+    @ViewBuilder
+    private var activeVolumeCard: some View {
+        if let vol = activeVolume {
+            let barColor = vol.usedPercentage > 0.88
+                ? TactilePalette.crimsonDanger
+                : (vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
 
-                            Button {
-                                registry.selectedVolumeID = volume.id
-                                registry.isShowingVolumeList = false
-                            } label: {
-                                HStack(spacing: 5) {
-                                    Text(String(format: "%02d", idx + 1))
-                                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(isSelected ? badgeColor : TactilePalette.slateDim)
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text("\(vol.kindBadge) // \(vol.name.uppercased())")
+                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(barColor)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 2)
+                    Text(vol.usedPercentage, format: .percent.precision(.fractionLength(0)))
+                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.ivoryText)
+                }
 
-                                    Text(volume.name.uppercased())
-                                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(isSelected ? TactilePalette.ivoryText : TactilePalette.silverMuted)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
+                TactileLinearBarView(
+                    ratio: vol.usedPercentage,
+                    fillColor: barColor,
+                    trackColor: TactilePalette.obsidianBackground,
+                    height: 5.0
+                )
 
-                                    Spacer(minLength: 2)
+                HStack {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(vol.formattedFreeGB)
+                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                            .foregroundStyle(TactilePalette.ivoryText)
+                        Text(vol.formattedUsedRatio)
+                            .font(.system(size: 7.5, weight: .regular, design: .monospaced))
+                            .foregroundStyle(TactilePalette.silverMuted)
+                    }
 
-                                    Text(volume.formattedFreeGB)
-                                        .font(.system(size: 7.5, weight: .regular, design: .monospaced))
-                                        .foregroundStyle(badgeColor)
-                                }
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 4.5)
+                    Spacer(minLength: 2)
+
+                    Button(action: registry.revealSelectedVolumeInFinder) {
+                        Text("OPEN")
+                            .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 5.5)
+                            .padding(.vertical, 3.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .strokeBorder(TactilePalette.borderSteel, lineWidth: 0.8)
+                            )
+                            .foregroundStyle(TactilePalette.ivoryText)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Reveal volume in Finder")
+
+                    if vol.isEjectable {
+                        Button(action: registry.ejectSelectedVolume) {
+                            Text("EJECT ⏏")
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .padding(.horizontal, 5.5)
+                                .padding(.vertical, 3.5)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(isSelected ? badgeColor.opacity(0.18) : TactilePalette.obsidianBackground)
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(TactilePalette.internationalOrange.opacity(0.22))
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .strokeBorder(isSelected ? badgeColor : TactilePalette.gridLine, lineWidth: 0.8)
+                                            RoundedRectangle(cornerRadius: 3)
+                                                .strokeBorder(TactilePalette.internationalOrange, lineWidth: 0.8)
                                         )
                                 )
+                                .foregroundStyle(TactilePalette.internationalOrange)
                                 .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
                         }
+                        .buttonStyle(.plain)
+                        .help("Safely eject selected volume (\(vol.name))")
                     }
-                }
-                .frame(height: 112)
-            } else {
-                if let vol = activeVolume {
-                    let barColor = vol.usedPercentage > 0.88
-                        ? TactilePalette.crimsonDanger
-                        : (vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
-
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack {
-                            Text("\(vol.kindBadge) // \(vol.name.uppercased())")
-                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(barColor)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            Spacer(minLength: 2)
-                            Text("\(Int(vol.usedPercentage * 100))%")
-                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.ivoryText)
-                        }
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(TactilePalette.obsidianBackground)
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(barColor)
-                                    .frame(width: geo.size.width * vol.usedPercentage)
-                            }
-                        }
-                        .frame(height: 5)
-
-                        HStack {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(vol.formattedFreeGB)
-                                    .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(TactilePalette.ivoryText)
-                                Text(vol.formattedUsedRatio)
-                                    .font(.system(size: 7.5, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(TactilePalette.silverMuted)
-                            }
-
-                            Spacer(minLength: 2)
-
-                            Button {
-                                registry.revealSelectedVolumeInFinder()
-                            } label: {
-                                Text("OPEN")
-                                    .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                    .padding(.horizontal, 5.5)
-                                    .padding(.vertical, 3.5)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .strokeBorder(TactilePalette.borderSteel, lineWidth: 0.8)
-                                    )
-                                    .foregroundStyle(TactilePalette.ivoryText)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help("Reveal volume in Finder")
-
-                            if vol.isEjectable {
-                                Button {
-                                    registry.ejectSelectedVolume()
-                                } label: {
-                                    Text("EJECT ⏏")
-                                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                        .padding(.horizontal, 5.5)
-                                        .padding(.vertical, 3.5)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 3)
-                                                .fill(TactilePalette.internationalOrange.opacity(0.22))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 3)
-                                                        .strokeBorder(TactilePalette.internationalOrange, lineWidth: 0.8)
-                                                )
-                                        )
-                                        .foregroundStyle(TactilePalette.internationalOrange)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .help("Safely eject selected volume (\(vol.name))")
-                            }
-                        }
-                    }
-                    .padding(6.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 5)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                            )
-                    )
-                }
-
-                let hw = registry.hardwareTelemetry
-                HStack(spacing: 5) {
-                    VStack(alignment: .leading, spacing: 2.5) {
-                        HStack {
-                            Text("PWR.SOURCE")
-                                .font(.system(size: 6.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.slateDim)
-                            Spacer(minLength: 2)
-                            Text(hw.powerPercentLabel)
-                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.oscilloscopeCyan)
-                        }
-
-                        Text(hw.powerSourceLabel)
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.ivoryText)
-                            .lineLimit(1)
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(TactilePalette.graphitePanel)
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(TactilePalette.oscilloscopeCyan)
-                                    .frame(width: max(3, geo.size.width * hw.powerLevelRatio))
-                            }
-                        }
-                        .frame(height: 3.5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(4.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.oscilloscopeCyan.opacity(0.45), lineWidth: 0.8)
-                            )
-                    )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("THERMAL")
-                            .font(.system(size: 6.5, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.slateDim)
-
-                        Text(hw.thermalStateLabel)
-                            .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                            .foregroundStyle(
-                                hw.isThermalElevated
-                                    ? TactilePalette.internationalOrange
-                                    : TactilePalette.signalEmerald
-                            )
-
-                        Text(String(format: "%04d OPS", registry.totalTriggerCount))
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.tungstenAmber)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(4.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                            )
-                    )
                 }
             }
+            .padding(6.5)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(TactilePalette.obsidianBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                    )
+            )
+        }
+    }
+
+    private var powerAndThermalGauges: some View {
+        let hw = registry.hardwareTelemetry
+        return HStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 2.5) {
+                HStack {
+                    Text("PWR.SOURCE")
+                        .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.slateDim)
+                    Spacer(minLength: 2)
+                    Text(hw.powerPercentLabel)
+                        .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.oscilloscopeCyan)
+                }
+
+                Text(hw.powerSourceLabel)
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.ivoryText)
+                    .lineLimit(1)
+
+                TactileLinearBarView(
+                    ratio: hw.powerLevelRatio,
+                    fillColor: TactilePalette.oscilloscopeCyan,
+                    height: 3.5
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(4.5)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(TactilePalette.obsidianBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(TactilePalette.oscilloscopeCyan.opacity(0.45), lineWidth: 0.8)
+                    )
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Power Source")
+            .accessibilityValue("\(hw.powerPercentLabel), \(hw.powerSourceLabel)")
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("THERMAL")
+                    .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.slateDim)
+
+                Text(hw.thermalStateLabel)
+                    .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                    .foregroundStyle(
+                        hw.isThermalElevated
+                            ? TactilePalette.internationalOrange
+                            : TactilePalette.signalEmerald
+                    )
+
+                Text(String(format: "%04d OPS", registry.totalTriggerCount))
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .foregroundStyle(TactilePalette.tungstenAmber)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(4.5)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(TactilePalette.obsidianBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                    )
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Thermal State and Actuations")
+            .accessibilityValue("\(hw.thermalStateLabel), \(registry.totalTriggerCount) operations")
         }
     }
 }

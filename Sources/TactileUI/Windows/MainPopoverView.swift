@@ -31,12 +31,15 @@ public struct MainPopoverView: View {
             }
 
             if registry.isShowingSupportSheet {
-                Color.black.opacity(0.72)
-                    .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        registry.isShowingSupportSheet = false
-                    }
+                Button {
+                    registry.isShowingSupportSheet = false
+                } label: {
+                    Color.black.opacity(0.72)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss support sheet")
 
                 SupportAndAboutSheet(
                     totalTriggerCount: registry.totalTriggerCount,
@@ -96,6 +99,7 @@ public struct MainPopoverView: View {
                             .foregroundStyle(TactilePalette.slateDim)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Clear filter query")
                 }
             }
             .padding(.horizontal, 8)
@@ -175,7 +179,9 @@ public struct MainPopoverView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .help("Synchronize telemetry across all 26 switches, storage volumes, and Bluetooth devices")
+                .keyboardShortcut("r", modifiers: .command)
+                .accessibilityLabel("Refresh telemetry")
+                .help("Synchronize telemetry across all 26 switches, storage volumes, and Bluetooth devices (⌘R)")
             }
         }
         .padding(.horizontal, 16)
@@ -186,13 +192,13 @@ public struct MainPopoverView: View {
     private var domainFilterBar: some View {
         HStack(spacing: 6) {
             ForEach(SwitchDomain.allCases, id: \.self) { domain in
-                let domainItems = registry.switches.filter { $0.domain == domain }
-                let activeInDomain = domainItems.filter { $0.state.isEnabled }.count
+                let counts = registry.domainCounts(for: domain)
                 domainTabButton(
                     label: domain.shortCode,
-                    countBadge: "\(activeInDomain)/\(domainItems.count)",
+                    countBadge: "\(counts.active)/\(counts.total)",
                     domain: domain,
-                    accent: TactilePalette.accentColor(for: domain)
+                    accent: TactilePalette.accentColor(for: domain),
+                    shortcutKey: shortcutKey(for: domain)
                 )
             }
 
@@ -202,14 +208,36 @@ public struct MainPopoverView: View {
                 label: "ALL",
                 countBadge: "\(registry.switches.count)",
                 domain: nil,
-                accent: TactilePalette.ivoryText
+                accent: TactilePalette.ivoryText,
+                shortcutKey: "0"
             )
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
     }
 
-    private func domainTabButton(label: String, countBadge: String, domain: SwitchDomain?, accent: Color) -> some View {
+    private func shortcutKey(for domain: SwitchDomain) -> KeyEquivalent {
+        switch domain {
+        case .power:
+            return "1"
+        case .optics:
+            return "2"
+        case .workspace:
+            return "3"
+        case .signal:
+            return "4"
+        case .security:
+            return "5"
+        }
+    }
+
+    private func domainTabButton(
+        label: String,
+        countBadge: String,
+        domain: SwitchDomain?,
+        accent: Color,
+        shortcutKey: KeyEquivalent
+    ) -> some View {
         let isSelected = registry.selectedDomainFilter == domain
         return Button {
             registry.selectedDomainFilter = domain
@@ -241,6 +269,7 @@ public struct MainPopoverView: View {
             )
         }
         .buttonStyle(.plain)
+        .keyboardShortcut(shortcutKey, modifiers: .command)
     }
 
     private var switchGridSection: some View {
