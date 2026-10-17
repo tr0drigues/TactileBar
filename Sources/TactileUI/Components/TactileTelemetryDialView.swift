@@ -62,7 +62,6 @@ public struct TactileTelemetryDialView: View {
             .frame(width: 112)
 
             // Centerpiece: Concentric Rotary Telemetry Disk (Visão do Disco)
-            // Clicar no núcleo alterna para o próximo disco montado
             Button {
                 registry.cycleNextVolume()
             } label: {
@@ -74,7 +73,7 @@ public struct TactileTelemetryDialView: View {
                         let rSectorOuter = maxR * 0.84
                         let rSectorInner = maxR * 0.64
                         let rDiskArc = maxR * 0.49
-                        let rCore = maxR * 0.34
+                        let rCore = maxR * 0.35
 
                         // Background obsidian plate
                         let outerRect = CGRect(x: center.x - rOuter, y: center.y - rOuter, width: rOuter * 2, height: rOuter * 2)
@@ -209,19 +208,19 @@ public struct TactileTelemetryDialView: View {
                     }
                     .frame(width: 158, height: 158)
 
-                    // Center Readout Label (Shows Selected Disk % + Active Modules)
+                    // Compact Fixed-Code Center Readout (Never overflows the inner ring)
                     VStack(spacing: 1) {
                         if let vol = activeVolume {
-                            Text(vol.name.uppercased())
+                            Text(String(format: "%@.%02d", vol.kindBadge, registry.selectedVolumeIndex))
                                 .font(.system(size: 7.5, weight: .bold, design: .monospaced))
                                 .foregroundStyle(vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
-                                .lineLimit(1)
-                                .frame(maxWidth: 68)
+
                             Text("\(Int(vol.usedPercentage * 100))%")
                                 .font(.system(size: 13, weight: .heavy, design: .monospaced))
                                 .foregroundStyle(TactilePalette.ivoryText)
-                            Text("SW \(registry.activeSwitchCount)/\(registry.switches.count)")
-                                .font(.system(size: 7, weight: .semibold, design: .monospaced))
+
+                            Text(String(format: "SW %02d/%02d", registry.activeSwitchCount, registry.switches.count))
+                                .font(.system(size: 6.5, weight: .semibold, design: .monospaced))
                                 .foregroundStyle(TactilePalette.tungstenAmber)
                         } else {
                             Text(String(format: "%02d/%02d", registry.activeSwitchCount, registry.switches.count))
@@ -232,207 +231,287 @@ public struct TactileTelemetryDialView: View {
                                 .foregroundStyle(TactilePalette.tungstenAmber)
                         }
                     }
+                    .frame(width: 48)
+                    .minimumScaleFactor(0.75)
                 }
             }
             .buttonStyle(.plain)
-            .help("Clique no disco para alternar entre os volumes montados")
+            .help("Clique no centro do disco para alternar entre os volumes montados")
 
-            // Right Column: Multi-Disk Selector & Storage Telemetry
+            // Right Column: Contained Stepper + Vertical Expandable Disk List
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("VOLUMES (\(registry.mountedVolumes.count))")
-                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                        .foregroundStyle(TactilePalette.slateDim)
-
-                    Spacer()
-
-                    if registry.mountedVolumes.count > 1 {
-                        Button {
-                            registry.cycleNextVolume()
-                        } label: {
-                            HStack(spacing: 2) {
-                                Text("NEXT")
-                                Image(systemName: "chevron.right")
-                            }
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.tungstenAmber)
-                        }
-                        .buttonStyle(.plain)
+                // Top Stepper & Vertical List Selector Bar (Zero Horizontal Overflow)
+                HStack(spacing: 4) {
+                    Button {
+                        registry.cyclePreviousVolume()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(TactilePalette.silverMuted)
+                            .frame(width: 20, height: 22)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(TactilePalette.obsidianBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                    )
+                            )
+                            .contentShape(Rectangle())
                     }
-                }
+                    .buttonStyle(.plain)
+                    .help("Volume anterior")
 
-                // Interactive Disk Selector Pills (Select between Macintosh HD, DADOS, dji, etc.)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 5) {
-                        ForEach(registry.mountedVolumes) { volume in
-                            let isSelected = volume.id == activeVolume?.id
-                            let badgeColor = volume.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan
+                    Button {
+                        registry.isShowingVolumeList.toggle()
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(String(format: "%02d/%02d", registry.selectedVolumeIndex, registry.mountedVolumes.count))
+                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.tungstenAmber)
 
-                            Button {
-                                registry.selectedVolumeID = volume.id
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(isSelected ? badgeColor : TactilePalette.slateDim)
-                                        .frame(width: 5, height: 5)
+                            Text(activeVolume?.name.uppercased() ?? "NO DISK")
+                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.ivoryText)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
 
-                                    Text(volume.name.uppercased())
-                                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                                        .lineLimit(1)
-                                }
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 4)
-                                .background(
+                            Spacer(minLength: 2)
+
+                            Image(systemName: registry.isShowingVolumeList ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(TactilePalette.tungstenAmber)
+                        }
+                        .padding(.horizontal, 7)
+                        .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(
+                                    registry.isShowingVolumeList
+                                        ? TactilePalette.tungstenAmber.opacity(0.16)
+                                        : TactilePalette.obsidianBackground
+                                )
+                                .overlay(
                                     RoundedRectangle(cornerRadius: 4)
-                                        .fill(isSelected ? badgeColor.opacity(0.20) : TactilePalette.obsidianBackground)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .strokeBorder(isSelected ? badgeColor : TactilePalette.gridLine, lineWidth: 0.9)
+                                        .strokeBorder(
+                                            registry.isShowingVolumeList
+                                                ? TactilePalette.tungstenAmber
+                                                : TactilePalette.borderSteel,
+                                            lineWidth: 0.9
                                         )
                                 )
-                                .foregroundStyle(isSelected ? badgeColor : TactilePalette.silverMuted)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        )
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .help("Abrir lista vertical de todos os discos montados")
+
+                    Button {
+                        registry.cycleNextVolume()
+                    } label: {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(TactilePalette.silverMuted)
+                            .frame(width: 20, height: 22)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(TactilePalette.obsidianBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                    )
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Próximo volume")
                 }
 
-                // Selected Disk Detailed Telemetry Card
-                if let vol = activeVolume {
-                    let barColor = vol.usedPercentage > 0.88
-                        ? TactilePalette.crimsonDanger
-                        : (vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
+                if registry.isShowingVolumeList {
+                    // Vertical Scrollable Disk List (Handles unlimited disks without overflowing)
+                    ScrollView(.vertical, showsIndicators: true) {
+                        VStack(spacing: 4) {
+                            ForEach(Array(registry.mountedVolumes.enumerated()), id: \.element.id) { idx, volume in
+                                let isSelected = volume.id == activeVolume?.id
+                                let badgeColor = volume.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan
 
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack {
-                            Text("\(vol.kindBadge) // \(vol.name.uppercased())")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundStyle(barColor)
-                                .lineLimit(1)
-                            Spacer()
-                            Text("\(Int(vol.usedPercentage * 100))%")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundStyle(TactilePalette.ivoryText)
-                        }
+                                Button {
+                                    registry.selectedVolumeID = volume.id
+                                    registry.isShowingVolumeList = false
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Text(String(format: "%02d", idx + 1))
+                                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                            .foregroundStyle(isSelected ? badgeColor : TactilePalette.slateDim)
 
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(TactilePalette.obsidianBackground)
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(barColor)
-                                    .frame(width: geo.size.width * vol.usedPercentage)
+                                        Text(volume.name.uppercased())
+                                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                                            .foregroundStyle(isSelected ? TactilePalette.ivoryText : TactilePalette.silverMuted)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+
+                                        Spacer(minLength: 4)
+
+                                        Text(volume.formattedFreeGB)
+                                            .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                            .foregroundStyle(badgeColor)
+                                    }
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(isSelected ? badgeColor.opacity(0.18) : TactilePalette.obsidianBackground)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 4)
+                                                    .strokeBorder(isSelected ? badgeColor : TactilePalette.gridLine, lineWidth: 0.8)
+                                            )
+                                    )
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
-                        .frame(height: 5)
+                    }
+                    .frame(height: 118)
+                } else {
+                    // Selected Disk Detailed Telemetry Card
+                    if let vol = activeVolume {
+                        let barColor = vol.usedPercentage > 0.88
+                            ? TactilePalette.crimsonDanger
+                            : (vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
 
-                        HStack {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(vol.formattedFreeGB)
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack {
+                                Text("\(vol.kindBadge) // \(vol.name.uppercased())")
+                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(barColor)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer(minLength: 4)
+                                Text("\(Int(vol.usedPercentage * 100))%")
                                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                                     .foregroundStyle(TactilePalette.ivoryText)
-                                Text(vol.formattedUsedRatio)
-                                    .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(TactilePalette.silverMuted)
                             }
 
-                            Spacer()
-
-                            // Open Selected Disk in Finder
-                            Button {
-                                registry.revealSelectedVolumeInFinder()
-                            } label: {
-                                Text("OPEN")
-                                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3.5)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .strokeBorder(TactilePalette.borderSteel, lineWidth: 0.8)
-                                    )
-                                    .foregroundStyle(TactilePalette.ivoryText)
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(TactilePalette.obsidianBackground)
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(barColor)
+                                        .frame(width: geo.size.width * vol.usedPercentage)
+                                }
                             }
-                            .buttonStyle(.plain)
-                            .help("Abrir este volume no Finder")
+                            .frame(height: 5)
 
-                            // Eject Selected Disk (if external/removable)
-                            if vol.isEjectable {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(vol.formattedFreeGB)
+                                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(TactilePalette.ivoryText)
+                                    Text(vol.formattedUsedRatio)
+                                        .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                        .foregroundStyle(TactilePalette.silverMuted)
+                                }
+
+                                Spacer()
+
                                 Button {
-                                    registry.ejectSelectedVolume()
+                                    registry.revealSelectedVolumeInFinder()
                                 } label: {
-                                    Text("EJECT ⏏")
+                                    Text("OPEN")
                                         .font(.system(size: 8, weight: .bold, design: .monospaced))
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 3.5)
                                         .background(
                                             RoundedRectangle(cornerRadius: 3)
-                                                .fill(TactilePalette.internationalOrange.opacity(0.22))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 3)
-                                                        .strokeBorder(TactilePalette.internationalOrange, lineWidth: 0.8)
-                                                )
+                                                .strokeBorder(TactilePalette.borderSteel, lineWidth: 0.8)
                                         )
-                                        .foregroundStyle(TactilePalette.internationalOrange)
+                                        .foregroundStyle(TactilePalette.ivoryText)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
-                                .help("Ejetar apenas o volume selecionado (\(vol.name))")
+                                .help("Abrir este volume no Finder")
+
+                                if vol.isEjectable {
+                                    Button {
+                                        registry.ejectSelectedVolume()
+                                    } label: {
+                                        Text("EJECT ⏏")
+                                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3.5)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 3)
+                                                    .fill(TactilePalette.internationalOrange.opacity(0.22))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 3)
+                                                            .strokeBorder(TactilePalette.internationalOrange, lineWidth: 0.8)
+                                                    )
+                                            )
+                                            .foregroundStyle(TactilePalette.internationalOrange)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Ejetar apenas o volume selecionado (\(vol.name))")
+                                }
                             }
                         }
+                        .padding(7)
+                        .background(
+                            RoundedRectangle(cornerRadius: 5)
+                                .fill(TactilePalette.obsidianBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                )
+                        )
                     }
-                    .padding(7)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 5)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                            )
-                    )
-                }
 
-                // Bottom Row: Removable Disks Count & Total Actuations
-                HStack(spacing: 6) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("EXT.DISKS")
-                            .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.slateDim)
-                        Text(String(format: "%02d EJECTABLE", registry.ejectableVolumeCount))
-                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                            .foregroundStyle(
-                                registry.ejectableVolumeCount > 0
-                                    ? TactilePalette.signalEmerald
-                                    : TactilePalette.silverMuted
-                            )
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                            )
-                    )
+                    // Bottom Row: Removable Disks Count & Total Actuations
+                    HStack(spacing: 6) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("EXT.DISKS")
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.slateDim)
+                            Text(String(format: "%02d EJECTABLE", registry.ejectableVolumeCount))
+                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(
+                                    registry.ejectableVolumeCount > 0
+                                        ? TactilePalette.signalEmerald
+                                        : TactilePalette.silverMuted
+                                )
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(TactilePalette.obsidianBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                )
+                        )
 
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("ACTUATIONS")
-                            .font(.system(size: 7.5, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.slateDim)
-                        Text(String(format: "%04d OPS", registry.totalTriggerCount))
-                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.tungstenAmber)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("ACTUATIONS")
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.slateDim)
+                            Text(String(format: "%04d OPS", registry.totalTriggerCount))
+                                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.tungstenAmber)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(TactilePalette.obsidianBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                )
+                        )
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(TactilePalette.obsidianBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
-                            )
-                    )
                 }
             }
             .frame(maxWidth: .infinity)

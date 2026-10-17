@@ -74,11 +74,30 @@ public final class SwitchRegistry {
         }
     }
 
+    public var selectedVolumeIndex: Int {
+        guard let idx = mountedVolumes.firstIndex(where: { $0.id == selectedVolumeID }) else {
+            return mountedVolumes.isEmpty ? 0 : 1
+        }
+        return idx + 1
+    }
+
+    public var isShowingVolumeList: Bool = false
+
     public func cycleNextVolume() {
         guard !mountedVolumes.isEmpty else { return }
         if let idx = mountedVolumes.firstIndex(where: { $0.id == selectedVolumeID }) {
             let nextIdx = (idx + 1) % mountedVolumes.count
             selectedVolumeID = mountedVolumes[nextIdx].id
+        } else if let first = mountedVolumes.first {
+            selectedVolumeID = first.id
+        }
+    }
+
+    public func cyclePreviousVolume() {
+        guard !mountedVolumes.isEmpty else { return }
+        if let idx = mountedVolumes.firstIndex(where: { $0.id == selectedVolumeID }) {
+            let prevIdx = (idx - 1 + mountedVolumes.count) % mountedVolumes.count
+            selectedVolumeID = mountedVolumes[prevIdx].id
         } else if let first = mountedVolumes.first {
             selectedVolumeID = first.id
         }
