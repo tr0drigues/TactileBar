@@ -16,32 +16,41 @@ public struct MainPopoverView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            headerSection
-            domainFilterBar
-            Divider().overlay(TactilePalette.gridLine)
-            if registry.isShowingRadialDial {
-                TactileTelemetryDialView(
-                    registry: registry,
-                    storageTelemetry: DiskStorageTelemetry.current()
-                )
+        ZStack {
+            VStack(spacing: 0) {
+                headerSection
+                domainFilterBar
                 Divider().overlay(TactilePalette.gridLine)
+                if registry.isShowingRadialDial {
+                    TactileTelemetryDialView(registry: registry)
+                    Divider().overlay(TactilePalette.gridLine)
+                }
+                switchGridSection
+                Divider().overlay(TactilePalette.gridLine)
+                footerSection
             }
-            switchGridSection
-            Divider().overlay(TactilePalette.gridLine)
-            footerSection
+
+            if registry.isShowingSupportSheet {
+                Color.black.opacity(0.72)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        registry.isShowingSupportSheet = false
+                    }
+
+                SupportAndAboutSheet(
+                    totalTriggerCount: registry.totalTriggerCount,
+                    onDismiss: { registry.isShowingSupportSheet = false }
+                )
+                .transition(.scale(scale: 0.96).combined(with: .opacity))
+            }
         }
+        .animation(.snappy(duration: 0.16), value: registry.isShowingSupportSheet)
         .frame(
             width: AppConfiguration.LayoutMetrics.popoverWidth,
             height: AppConfiguration.LayoutMetrics.popoverHeight
         )
         .background(TactilePalette.obsidianBackground)
-        .sheet(isPresented: $registry.isShowingSupportSheet) {
-            SupportAndAboutSheet(
-                totalTriggerCount: registry.totalTriggerCount,
-                onDismiss: { registry.isShowingSupportSheet = false }
-            )
-        }
         .task {
             await registry.refreshAll()
             registry.availableUpdate = await releaseChecker.checkForUpdate()

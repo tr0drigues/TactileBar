@@ -17,6 +17,7 @@ public enum TactilePalette {
     public static let internationalOrange = Color(red: 255.0 / 255.0, green: 87.0 / 255.0, blue: 34.0 / 255.0)
     public static let oscilloscopeCyan = Color(red: 56.0 / 255.0, green: 189.0 / 255.0, blue: 248.0 / 255.0)
     public static let signalEmerald = Color(red: 16.0 / 255.0, green: 185.0 / 255.0, blue: 129.0 / 255.0)
+    public static let crimsonDanger = Color(red: 239.0 / 255.0, green: 68.0 / 255.0, blue: 68.0 / 255.0)
 
     public static func accentColor(for domain: SwitchDomain) -> Color {
         switch domain {

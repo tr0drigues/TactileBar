@@ -27,11 +27,27 @@ public struct SupportAndAboutSheet: View {
                 Spacer()
 
                 Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(TactilePalette.silverMuted)
+                    HStack(spacing: 5) {
+                        Text("CLOSE")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(TactilePalette.ivoryText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(TactilePalette.obsidianBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .strokeBorder(TactilePalette.borderSteel, lineWidth: 1)
+                            )
+                    )
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
             }
 
             Rectangle()
@@ -119,7 +135,15 @@ public struct SupportAndAboutSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 480)
-        .background(TactilePalette.obsidianBackground)
+        .frame(width: 488)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(TactilePalette.graphitePanel)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(TactilePalette.tungstenAmber.opacity(0.65), lineWidth: 1.3)
+                )
+        )
+        .shadow(color: .black.opacity(0.65), radius: 24, x: 0, y: 10)
     }
 }
