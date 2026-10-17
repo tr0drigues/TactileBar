@@ -226,7 +226,8 @@ public struct MainPopoverView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
     }
 

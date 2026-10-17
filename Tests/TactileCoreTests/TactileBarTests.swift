@@ -35,12 +35,14 @@ final class TactileBarTests: XCTestCase {
         let switches = TactileSwitchCatalog.makeAllSwitches()
         let registry = SwitchRegistry(switches: switches)
 
+        XCTAssertEqual(registry.filteredSwitches.count, 5)
+
+        registry.selectedDomainFilter = nil
         XCTAssertEqual(registry.filteredSwitches.count, 26)
 
         registry.selectedDomainFilter = .signal
         XCTAssertEqual(registry.filteredSwitches.count, 3)
 
-        registry.selectedDomainFilter = nil
         registry.searchQuery = "XCODE"
         XCTAssertEqual(registry.filteredSwitches.count, 1)
         XCTAssertEqual(registry.filteredSwitches.first?.id, "SW.25")

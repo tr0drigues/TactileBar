@@ -5,11 +5,18 @@ public struct TactileVectorIconView: View {
     let switchID: String
     let isActive: Bool
     let accentColor: Color
+    let dimension: CGFloat
 
-    public init(switchID: String, isActive: Bool, accentColor: Color) {
+    public init(
+        switchID: String,
+        isActive: Bool,
+        accentColor: Color,
+        dimension: CGFloat = 38.0
+    ) {
         self.switchID = switchID
         self.isActive = isActive
         self.accentColor = accentColor
+        self.dimension = dimension
     }
 
     public var body: some View {
@@ -17,8 +24,8 @@ public struct TactileVectorIconView: View {
             // Outer Horological Bezel with 12 Graduated Ticks
             Canvas { context, size in
                 let center = CGPoint(x: size.width / 2, y: size.height / 2)
-                let outerRadius = min(size.width, size.height) / 2 - 1.5
-                let innerRadius = outerRadius - 4.0
+                let outerRadius = min(size.width, size.height) / 2 - 1.2
+                let innerRadius = outerRadius - 3.2
 
                 // Base obsidian well
                 let wellRect = CGRect(
@@ -31,10 +38,10 @@ public struct TactileVectorIconView: View {
 
                 // Subtle radial glow when active
                 if isActive {
-                    let glowRect = wellRect.insetBy(dx: 3, dy: 3)
+                    let glowRect = wellRect.insetBy(dx: 2.5, dy: 2.5)
                     context.fill(
                         Path(ellipseIn: glowRect),
-                        with: .color(accentColor.opacity(0.14))
+                        with: .color(accentColor.opacity(0.16))
                     )
                 }
 
@@ -42,15 +49,15 @@ public struct TactileVectorIconView: View {
                 context.stroke(
                     Path(ellipseIn: wellRect),
                     with: .color(isActive ? accentColor.opacity(0.9) : TactilePalette.borderSteel),
-                    lineWidth: isActive ? 1.5 : 1.0
+                    lineWidth: isActive ? 1.4 : 1.0
                 )
 
                 // 12 Horological Graduation Ticks
                 for tick in 0..<12 {
                     let angle = Double(tick) * (.pi / 6.0)
                     let isCardinal = tick % 3 == 0
-                    let rStart = isCardinal ? (outerRadius - 4.5) : (outerRadius - 3.0)
-                    let rEnd = outerRadius - 1.2
+                    let rStart = isCardinal ? (outerRadius - 3.6) : (outerRadius - 2.4)
+                    let rEnd = outerRadius - 1.0
                     let p1 = CGPoint(
                         x: center.x + CGFloat(cos(angle)) * rStart,
                         y: center.y + CGFloat(sin(angle)) * rStart
@@ -69,7 +76,7 @@ public struct TactileVectorIconView: View {
                                 ? (isCardinal ? accentColor : accentColor.opacity(0.45))
                                 : (isCardinal ? TactilePalette.silverMuted.opacity(0.55) : TactilePalette.gridLine)
                         ),
-                        lineWidth: isCardinal ? 1.2 : 0.8
+                        lineWidth: isCardinal ? 1.1 : 0.75
                     )
                 }
 
@@ -83,13 +90,13 @@ public struct TactileVectorIconView: View {
                 context.stroke(
                     Path(ellipseIn: innerRect),
                     with: .color(isActive ? accentColor.opacity(0.28) : TactilePalette.hairlineSubtle),
-                    lineWidth: 0.75
+                    lineWidth: 0.7
                 )
 
                 // Bespoke Vector Schematic per Switch ID
                 drawSchematic(in: &context, center: center, scale: outerRadius * 0.56)
             }
-            .frame(width: 52, height: 52)
+            .frame(width: dimension, height: dimension)
         }
     }
 

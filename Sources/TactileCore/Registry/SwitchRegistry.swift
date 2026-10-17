@@ -5,7 +5,7 @@ import Observation
 @MainActor
 public final class SwitchRegistry {
     public private(set) var switches: [any TactileSwitchProtocol]
-    public var selectedDomainFilter: SwitchDomain?
+    public var selectedDomainFilter: SwitchDomain? = .power
     public var searchQuery: String = ""
     public var isShowingSupportSheet: Bool = false
     public var isShowingRadialDial: Bool = true
@@ -43,14 +43,16 @@ public final class SwitchRegistry {
     }
 
     public var filteredSwitches: [any TactileSwitchProtocol] {
-        switches.filter { item in
-            let matchesDomain = selectedDomainFilter == nil || item.domain == selectedDomainFilter
-            let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-            let matchesSearch = trimmedQuery.isEmpty
-                || item.title.localizedCaseInsensitiveContains(trimmedQuery)
-                || item.id.localizedCaseInsensitiveContains(trimmedQuery)
-                || item.subsystemLabel.localizedCaseInsensitiveContains(trimmedQuery)
-            return matchesDomain && matchesSearch
+        let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedQuery.isEmpty {
+            return switches.filter { item in
+                item.title.localizedCaseInsensitiveContains(trimmedQuery)
+                    || item.id.localizedCaseInsensitiveContains(trimmedQuery)
+                    || item.subsystemLabel.localizedCaseInsensitiveContains(trimmedQuery)
+            }
+        }
+        return switches.filter { item in
+            selectedDomainFilter == nil || item.domain == selectedDomainFilter
         }
     }
 
