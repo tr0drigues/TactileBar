@@ -261,18 +261,34 @@ public struct TactileTelemetryDialView: View {
                     )
                 }
 
+                let hw = registry.hardwareTelemetry
                 HStack(spacing: 5) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("BT.LINKED")
+                    VStack(alignment: .leading, spacing: 2.5) {
+                        HStack {
+                            Text("CPU.LOAD")
+                                .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.slateDim)
+                            Spacer(minLength: 2)
+                            Text("\(hw.cpuTotalPercent)%")
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.tungstenAmber)
+                        }
+
+                        Text("USR \(hw.cpuUserPercent) · SYS \(hw.cpuSystemPercent)%")
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.slateDim)
-                        Text(String(format: "%02d ONLINE", registry.connectedBluetoothCount))
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(
-                                registry.connectedBluetoothCount > 0
-                                    ? TactilePalette.signalEmerald
-                                    : TactilePalette.silverMuted
-                            )
+                            .foregroundStyle(TactilePalette.ivoryText)
+                            .lineLimit(1)
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(TactilePalette.graphitePanel)
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(TactilePalette.tungstenAmber)
+                                    .frame(width: max(3, geo.size.width * hw.cpuTotalRatio))
+                            }
+                        }
+                        .frame(height: 3.5)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4.5)
@@ -281,17 +297,36 @@ public struct TactileTelemetryDialView: View {
                             .fill(TactilePalette.obsidianBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                    .strokeBorder(TactilePalette.tungstenAmber.opacity(0.45), lineWidth: 0.8)
                             )
                     )
 
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("BT.PAIRED")
+                    VStack(alignment: .leading, spacing: 2.5) {
+                        HStack {
+                            Text("MEM.RAM")
+                                .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.slateDim)
+                            Spacer(minLength: 2)
+                            Text("\(hw.memoryUsedPercent)%")
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.signalEmerald)
+                        }
+
+                        Text(hw.memoryFormattedRatio)
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.slateDim)
-                        Text(String(format: "%02d DEVICES", registry.pairedBluetoothDevices.count))
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.tungstenAmber)
+                            .foregroundStyle(TactilePalette.ivoryText)
+                            .lineLimit(1)
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(TactilePalette.graphitePanel)
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(TactilePalette.signalEmerald)
+                                    .frame(width: max(3, geo.size.width * hw.memoryUsedRatio))
+                            }
+                        }
+                        .frame(height: 3.5)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4.5)
@@ -300,7 +335,7 @@ public struct TactileTelemetryDialView: View {
                             .fill(TactilePalette.obsidianBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                    .strokeBorder(TactilePalette.signalEmerald.opacity(0.45), lineWidth: 0.8)
                             )
                     )
                 }
@@ -308,21 +343,24 @@ public struct TactileTelemetryDialView: View {
         }
     }
 
-    // MARK: - Centerpiece: Concentric Rotary Telemetry Disk
+    // MARK: - Centerpiece: Triple Concentric Rotary Telemetry Disk
 
     private var concentricDialCenterpiece: some View {
         Button {
             registry.cycleNextVolume()
         } label: {
+            let hw = registry.hardwareTelemetry
             ZStack {
                 Canvas { context, size in
                     let center = CGPoint(x: size.width / 2, y: size.height / 2)
                     let maxR = min(size.width, size.height) / 2 - 3
                     let rOuter = maxR
-                    let rSectorOuter = maxR * 0.84
-                    let rSectorInner = maxR * 0.64
-                    let rDiskArc = maxR * 0.49
-                    let rCore = maxR * 0.35
+                    let rSectorOuter = maxR * 0.86
+                    let rSectorInner = maxR * 0.74
+                    let rCpuArc = maxR * 0.65
+                    let rRamArc = maxR * 0.54
+                    let rDiskArc = maxR * 0.43
+                    let rCore = maxR * 0.33
 
                     let outerRect = CGRect(x: center.x - rOuter, y: center.y - rOuter, width: rOuter * 2, height: rOuter * 2)
                     context.fill(Path(ellipseIn: outerRect), with: .color(TactilePalette.obsidianBackground))
@@ -335,11 +373,42 @@ public struct TactileTelemetryDialView: View {
                     crosshair.addLine(to: CGPoint(x: center.x, y: center.y + rOuter))
                     context.stroke(crosshair, with: .color(TactilePalette.hairlineSubtle), lineWidth: 0.75)
 
-                    for r in [rSectorOuter, rSectorInner, rDiskArc, rCore] {
+                    for r in [rSectorOuter, rSectorInner, rCore] {
                         let ringRect = CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2)
                         context.stroke(Path(ellipseIn: ringRect), with: .color(TactilePalette.gridLine), lineWidth: 0.85)
                     }
 
+                    // Ring 1 (Outer Telemetry Ring): CPU Load Arc (Amber)
+                    var cpuTrack = Path()
+                    cpuTrack.addArc(center: center, radius: rCpuArc, startAngle: .degrees(-90), endAngle: .degrees(270), clockwise: false)
+                    context.stroke(cpuTrack, with: .color(TactilePalette.tungstenAmber.opacity(0.15)), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
+
+                    var cpuFill = Path()
+                    cpuFill.addArc(
+                        center: center,
+                        radius: rCpuArc,
+                        startAngle: .degrees(-90),
+                        endAngle: .degrees(-90.0 + 360.0 * hw.cpuTotalRatio),
+                        clockwise: false
+                    )
+                    context.stroke(cpuFill, with: .color(TactilePalette.tungstenAmber), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
+
+                    // Ring 2 (Middle Telemetry Ring): Memory RAM Saturation Arc (Emerald)
+                    var ramTrack = Path()
+                    ramTrack.addArc(center: center, radius: rRamArc, startAngle: .degrees(-90), endAngle: .degrees(270), clockwise: false)
+                    context.stroke(ramTrack, with: .color(TactilePalette.signalEmerald.opacity(0.15)), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
+
+                    var ramFill = Path()
+                    ramFill.addArc(
+                        center: center,
+                        radius: rRamArc,
+                        startAngle: .degrees(-90),
+                        endAngle: .degrees(-90.0 + 360.0 * hw.memoryUsedRatio),
+                        clockwise: false
+                    )
+                    context.stroke(ramFill, with: .color(TactilePalette.signalEmerald), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
+
+                    // Ring 3 (Inner Telemetry Ring): Storage Disk Saturation Arc (Cyan)
                     if let vol = activeVolume {
                         var diskTrack = Path()
                         diskTrack.addArc(
@@ -352,7 +421,7 @@ public struct TactileTelemetryDialView: View {
                         context.stroke(
                             diskTrack,
                             with: .color(TactilePalette.oscilloscopeCyan.opacity(0.15)),
-                            style: StrokeStyle(lineWidth: 5.0, lineCap: .round)
+                            style: StrokeStyle(lineWidth: 4.2, lineCap: .round)
                         )
 
                         let endDeg = -90.0 + (360.0 * vol.usedPercentage)
@@ -370,7 +439,7 @@ public struct TactileTelemetryDialView: View {
                         context.stroke(
                             diskFill,
                             with: .color(diskColor),
-                            style: StrokeStyle(lineWidth: 5.0, lineCap: .round)
+                            style: StrokeStyle(lineWidth: 4.2, lineCap: .round)
                         )
                     }
 
@@ -402,7 +471,7 @@ public struct TactileTelemetryDialView: View {
                                     ? accent
                                     : accent.opacity(isDomainSelected ? 0.35 : 0.12)
                             ),
-                            style: StrokeStyle(lineWidth: rSectorOuter - rSectorInner - 3.0, lineCap: .butt)
+                            style: StrokeStyle(lineWidth: rSectorOuter - rSectorInner - 2.2, lineCap: .butt)
                         )
 
                         if isOn {
@@ -415,7 +484,7 @@ public struct TactileTelemetryDialView: View {
                                 x: center.x + CGFloat(cos(midAngle)) * rSectorInner,
                                 y: center.y + CGFloat(sin(midAngle)) * rSectorInner
                             ))
-                            context.stroke(beam, with: .color(accent.opacity(0.75)), lineWidth: 1.3)
+                            context.stroke(beam, with: .color(accent.opacity(0.65)), lineWidth: 1.1)
                         }
 
                         let tickStart = rSectorOuter + 2.0
@@ -447,29 +516,29 @@ public struct TactileTelemetryDialView: View {
 
                     let coreRect = CGRect(x: center.x - rCore, y: center.y - rCore, width: rCore * 2, height: rCore * 2)
                     context.fill(Path(ellipseIn: coreRect), with: .color(TactilePalette.graphitePanel))
-                    context.stroke(Path(ellipseIn: coreRect), with: .color(TactilePalette.tungstenAmber.opacity(0.7)), lineWidth: 1.2)
+                    context.stroke(Path(ellipseIn: coreRect), with: .color(TactilePalette.tungstenAmber.opacity(0.75)), lineWidth: 1.2)
                 }
                 .frame(width: 142, height: 142)
 
                 VStack(spacing: 1) {
-                    if let vol = activeVolume {
-                        Text(String(format: "%@.%02d", vol.kindBadge, registry.selectedVolumeIndex))
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
+                    Text("C:\(hw.cpuTotalPercent) R:\(hw.memoryUsedPercent)")
+                        .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.signalEmerald)
 
+                    if let vol = activeVolume {
                         Text("\(Int(vol.usedPercentage * 100))%")
-                            .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                            .font(.system(size: 11.5, weight: .heavy, design: .monospaced))
                             .foregroundStyle(TactilePalette.ivoryText)
 
-                        Text(String(format: "SW %02d/%02d", registry.activeSwitchCount, registry.switches.count))
-                            .font(.system(size: 6.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.tungstenAmber)
+                        Text(String(format: "%@.%02d", vol.kindBadge, registry.selectedVolumeIndex))
+                            .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                            .foregroundStyle(vol.isEjectable ? TactilePalette.signalEmerald : TactilePalette.oscilloscopeCyan)
                     } else {
                         Text(String(format: "%02d/%02d", registry.activeSwitchCount, registry.switches.count))
                             .font(.system(size: 11.5, weight: .heavy, design: .monospaced))
                             .foregroundStyle(TactilePalette.ivoryText)
                         Text("ONLINE")
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                            .font(.system(size: 6.5, weight: .bold, design: .monospaced))
                             .foregroundStyle(TactilePalette.tungstenAmber)
                     }
                 }
@@ -478,7 +547,7 @@ public struct TactileTelemetryDialView: View {
             }
         }
         .buttonStyle(.plain)
-        .help("Click the dial core to cycle through mounted storage volumes")
+        .help("Concentric Telemetry Rings — Outer: 26 Switches | Amber: CPU Load | Emerald: RAM Usage | Cyan: Disk Saturation. Click core to cycle storage volumes.")
     }
 
     // MARK: - Right Column: Storage Volumes Selector
@@ -710,18 +779,34 @@ public struct TactileTelemetryDialView: View {
                     )
                 }
 
+                let hw = registry.hardwareTelemetry
                 HStack(spacing: 5) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("EXT.DISKS")
+                    VStack(alignment: .leading, spacing: 2.5) {
+                        HStack {
+                            Text("PWR.SOURCE")
+                                .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.slateDim)
+                            Spacer(minLength: 2)
+                            Text(hw.powerPercentLabel)
+                                .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(TactilePalette.oscilloscopeCyan)
+                        }
+
+                        Text(hw.powerSourceLabel)
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(TactilePalette.slateDim)
-                        Text(String(format: "%02d EJECTABLE", registry.ejectableVolumeCount))
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundStyle(
-                                registry.ejectableVolumeCount > 0
-                                    ? TactilePalette.signalEmerald
-                                    : TactilePalette.silverMuted
-                            )
+                            .foregroundStyle(TactilePalette.ivoryText)
+                            .lineLimit(1)
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(TactilePalette.graphitePanel)
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(TactilePalette.oscilloscopeCyan)
+                                    .frame(width: max(3, geo.size.width * hw.powerLevelRatio))
+                            }
+                        }
+                        .frame(height: 3.5)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4.5)
@@ -730,16 +815,25 @@ public struct TactileTelemetryDialView: View {
                             .fill(TactilePalette.obsidianBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .strokeBorder(TactilePalette.gridLine, lineWidth: 0.8)
+                                    .strokeBorder(TactilePalette.oscilloscopeCyan.opacity(0.45), lineWidth: 0.8)
                             )
                     )
 
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("ACTUATIONS")
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("THERMAL")
+                            .font(.system(size: 6.5, weight: .bold, design: .monospaced))
                             .foregroundStyle(TactilePalette.slateDim)
+
+                        Text(hw.thermalStateLabel)
+                            .font(.system(size: 7.5, weight: .bold, design: .monospaced))
+                            .foregroundStyle(
+                                hw.isThermalElevated
+                                    ? TactilePalette.internationalOrange
+                                    : TactilePalette.signalEmerald
+                            )
+
                         Text(String(format: "%04d OPS", registry.totalTriggerCount))
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                            .font(.system(size: 7, weight: .bold, design: .monospaced))
                             .foregroundStyle(TactilePalette.tungstenAmber)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

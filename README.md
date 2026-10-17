@@ -32,15 +32,15 @@ Developers, designers, and power users toggle the same system states dozens of t
 ### Why TactileBar?
 
 * **Symmetric 3-Deck Telemetry Instrument**:
-  * **Left Deck — Direct Bluetooth RF Link (`IOBluetooth`)**: Cycle through all paired Bluetooth headphones, speakers, and controllers (`EDIFIER`, `JBL`, `AirPods`, `DualSense`, keyboards, mice) via a contained stepper or expandable vertical list, and connect or disconnect with a single click.
-  * **Centerpiece — Concentric Rotary Telemetry Dial**: A 26-sector radial chronograph that maps active system switches on its outer ring and live storage saturation (`SYS.01`, `EXT.02`) on its inner arc. Click the core to cycle through mounted disks.
-  * **Right Deck — Multi-Volume Storage Telemetry (`FileManager` & `DiskArbitration`)**: Inspect free space and usage ratios across internal and external drives (`Macintosh HD`, `DADOS`, SD cards), reveal volumes in Finder, or eject individual removable disks safely.
+  * **Left Deck — Direct Bluetooth RF Link (`IOBluetooth`) & Live CPU/RAM Gauges**: Cycle through all paired Bluetooth headphones, speakers, and controllers (`EDIFIER`, `JBL`, `AirPods`, `DualSense`, keyboards, mice) via a contained stepper or expandable vertical list, and connect or disconnect with a single click. Below it, live Mach kernel gauges track **`CPU.LOAD`** (`USER / SYS %`) and **`MEM.RAM`** (`Used / Total GB`).
+  * **Centerpiece — Triple Concentric Rotary Telemetry Dial**: A 26-sector radial chronograph that maps active system switches on its outer bezel and three concentric hardware telemetry rings inside: **CPU Load (Amber)**, **RAM Pressure (Emerald)**, and **Storage Saturation (Cyan)**. Click the core to cycle through mounted disks.
+  * **Right Deck — Multi-Volume Storage (`DiskArbitration`) & Power/Thermal Readouts**: Inspect free space and usage ratios across internal and external drives (`Macintosh HD`, `DADOS`, SD cards), reveal volumes in Finder, or eject individual removable disks safely, alongside live **`PWR.SOURCE`** (`IOKit` battery/AC state) and **`THERMAL`** (`ProcessInfo` nominal/elevated state) telemetry.
 * **26 Hardware-Inspired Switches Across 5 Domains**:
   * Every switch features a bespoke 36pt vector schematic inside a 12-tick horological bezel—never generic placeholder icons.
-* **Zero-Scroll Ergonomics**:
-  * Engineered around a strict `540×576pt` vertical budget so all 5 domain tabs (`PWR`, `OPT`, `WKS`, `SIG`, `SEC`) display their complete switch matrix without a scrollbar.
+* **Zero-Scroll Ergonomics & Zero Idle CPU (`0.0%`)**:
+  * Engineered around a strict `540×576pt` vertical budget so all 5 domain tabs (`PWR`, `OPT`, `WKS`, `SIG`, `SEC`) display their complete switch matrix without a scrollbar. Mach kernel telemetry (`host_processor_info`, `host_statistics64`) is sampled only while the popover is open on screen.
 * **100% Native User-Space Execution**:
-  * Built directly on `IOKit`, `CoreAudio`, `CoreGraphics`, `IOBluetooth`, `DiskArbitration`, `AppKit`, and `CoreImage`. No Electron, no background daemons, and no external Swift packages.
+  * Built directly on `Darwin.Mach`, `IOKit`, `CoreAudio`, `CoreGraphics`, `IOBluetooth`, `DiskArbitration`, `AppKit`, and `CoreImage`. No Electron, no background daemons, and no external Swift packages.
 
 ---
 
@@ -100,15 +100,15 @@ O **TactileBar** substitui menus espalhados por um **Instrumento de Telemetria T
 ### Diferenciais do TactileBar
 
 * **Deck de Telemetria Simétrico de 3 Colunas**:
-  * **Deck Esquerdo — Controle Direto Bluetooth RF (`IOBluetooth`)**: Navegue por todos os seus fones, caixas de som e controles pareados (`EDIFIER`, `JBL`, `AirPods`, `DualSense`, teclados, mouses) através do seletor `[ ◀ ] 01/03 [ ▶ ]` ou da lista vertical expansível, conectando e desconectando com **1 clique**.
-  * **Centro — Mostrador Rotativo Concêntrico (`Concentric Telemetry Dial`)**: Cronógrafo radial de 26 setores que reflete em tempo real os módulos ativos no anel externo e a ocupação do disco selecionado (`SYS.01`, `EXT.02`) no arco interno. Clique no núcleo para alternar rapidamente entre seus discos.
-  * **Deck Direito — Telemetria Multi-Volume (`FileManager` & `DiskArbitration`)**: Acompanhe espaço livre e ocupação de cada volume interno ou externo (`Macintosh HD`, `DADOS`, cartões SD), abra no Finder com `OPEN` ou ejete discos removíveis individualmente com `EJECT ⏏`.
+  * **Deck Esquerdo — Controle Direto Bluetooth RF (`IOBluetooth`) + Medidores de CPU e RAM**: Navegue por todos os seus fones, caixas de som e controles pareados (`EDIFIER`, `JBL`, `AirPods`, `DualSense`, teclados, mouses) através do seletor `[ ◀ ] 01/03 [ ▶ ]` ou da lista vertical expansível, conectando e desconectando com **1 clique**. Abaixo, medidores nativos do kernel Mach exibem **`CPU.LOAD`** (`USER / SYS %`) e **`MEM.RAM`** (`GB Usados / Total`).
+  * **Centro — Mostrador Rotativo Concêntrico Triplo (`Triple Concentric Telemetry Dial`)**: Cronógrafo radial de 26 setores que mapeia os módulos ativos no anel externo e três anéis concêntricos de telemetria de hardware no interior: **Carga de CPU (Âmbar)**, **Pressão de Memória RAM (Esmeralda)** e **Ocupação do Disco (Ciano)**. Clique no núcleo para alternar rapidamente entre seus discos.
+  * **Deck Direito — Telemetria Multi-Volume (`DiskArbitration`) + Energia e Estado Térmico**: Acompanhe espaço livre e ocupação de cada volume interno ou externo (`Macintosh HD`, `DADOS`, cartões SD), abra no Finder com `OPEN` ou ejete discos removíveis individualmente com `EJECT ⏏`, além dos indicadores de fonte de energia **`PWR.SOURCE`** (`IOKit`) e **`THERMAL`** (`ProcessInfo`).
 * **26 Módulos com Esquemáticos Vetoriais Exclusivos**:
   * Cada módulo (`SW.01` a `SW.26`) possui uma gravura técnica vetorial própria dentro de uma moldura horológica de 12 marcações.
-* **Fluidez Zero-Rolagem (`Zero-Scroll Ergonomics`)**:
-  * Orçamento vertical calibrado em `540×576pt` para que todas as 5 abas de domínio (`PWR`, `OPT`, `WKS`, `SIG`, `SEC`) exibam todos os seus interruptores sem barra de rolagem.
+* **Fluidez Zero-Rolagem e `0.0%` de CPU em Segundo Plano**:
+  * Orçamento vertical calibrado em `540×576pt` para que todas as 5 abas de domínio (`PWR`, `OPT`, `WKS`, `SIG`, `SEC`) exibam todos os seus interruptores sem barra de rolagem. A telemetria do kernel Mach (`host_processor_info` e `host_statistics64`) é lida apenas enquanto o painel está aberto na tela.
 * **Execução 100% Nativa em User-Space**:
-  * Construído diretamente sobre `IOKit`, `CoreAudio`, `CoreGraphics`, `IOBluetooth`, `DiskArbitration`, `AppKit` e `CoreImage`. Sem Electron, sem processos residentes pesados e sem pacotes de terceiros.
+  * Construído diretamente sobre `Darwin.Mach`, `IOKit`, `CoreAudio`, `CoreGraphics`, `IOBluetooth`, `DiskArbitration`, `AppKit` e `CoreImage`. Sem Electron, sem processos residentes pesados e sem pacotes de terceiros.
 
 ---
 

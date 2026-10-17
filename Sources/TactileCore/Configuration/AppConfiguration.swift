@@ -3,7 +3,7 @@ import Foundation
 public enum AppConfiguration {
     public static let applicationName = "TactileBar"
     public static let bundleIdentifier = "studio.tactile.TactileBar"
-    public static let currentVersion = "1.0.8"
+    public static let currentVersion = "1.1.0"
     public static let totalCatalogSwitchCount = 26
 
     public static let githubRepositoryOwner = "tr0drigues"

@@ -54,6 +54,12 @@ public struct MainPopoverView: View {
         .task {
             await registry.refreshAll()
             registry.availableUpdate = await releaseChecker.checkForUpdate()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2.0))
+                if !Task.isCancelled {
+                    registry.refreshHardwareTelemetry()
+                }
+            }
         }
     }
 

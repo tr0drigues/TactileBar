@@ -20,6 +20,7 @@ public final class SwitchRegistry {
     }
     public private(set) var connectingBluetoothDeviceID: String?
     public private(set) var totalTriggerCount: Int
+    public private(set) var hardwareTelemetry: SystemHardwareTelemetrySnapshot = .initial
 
     public static let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
     private let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
@@ -33,6 +34,7 @@ public final class SwitchRegistry {
         self.switches = switches
         self.userDefaults = userDefaults
         self.totalTriggerCount = userDefaults.integer(forKey: triggerCountStorageKey)
+        self.hardwareTelemetry = HardwareTelemetryService.shared.captureSnapshot()
         let initialVolumes = DiskVolumeTelemetryService.listMountedVolumes()
         self.mountedVolumes = initialVolumes
         if let first = initialVolumes.first {
@@ -214,7 +216,12 @@ public final class SwitchRegistry {
         }
     }
 
+    public func refreshHardwareTelemetry() {
+        hardwareTelemetry = HardwareTelemetryService.shared.captureSnapshot()
+    }
+
     public func refreshAll() async {
+        refreshHardwareTelemetry()
         refreshDiskVolumes()
         refreshBluetoothDevices()
         for item in switches {

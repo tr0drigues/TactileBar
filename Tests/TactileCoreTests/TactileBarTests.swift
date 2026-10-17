@@ -62,4 +62,14 @@ final class TactileBarTests: XCTestCase {
         XCTAssertEqual(image?.width, 120)
         XCTAssertEqual(image?.height, 120)
     }
+
+    func testHardwareTelemetrySnapshotProducesValidMetrics() {
+        let snapshot = HardwareTelemetryService.shared.captureSnapshot()
+        XCTAssertGreaterThan(snapshot.cpuTotalRatio, 0.0)
+        XCTAssertLessThanOrEqual(snapshot.cpuTotalRatio, 1.0)
+        XCTAssertGreaterThan(snapshot.memoryUsedRatio, 0.0)
+        XCTAssertLessThanOrEqual(snapshot.memoryUsedRatio, 1.0)
+        XCTAssertFalse(snapshot.memoryFormattedRatio.isEmpty)
+        XCTAssertFalse(snapshot.thermalStateLabel.isEmpty)
+    }
 }

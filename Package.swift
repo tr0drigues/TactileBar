@@ -16,7 +16,10 @@ let package = Package(
     targets: [
         .target(
             name: "TactileCore",
-            path: "Sources/TactileCore"
+            path: "Sources/TactileCore",
+            linkerSettings: [
+                .linkedFramework("IOKit")
+            ]
         ),
         .target(
             name: "SystemAdapters",
