@@ -58,7 +58,7 @@ public struct TactileTelemetryDialView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Dispositivo Bluetooth anterior")
+                .help("Previous paired Bluetooth device")
 
                 Button {
                     registry.isShowingBluetoothList.toggle()
@@ -102,7 +102,7 @@ public struct TactileTelemetryDialView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Abrir lista vertical de dispositivos Bluetooth pareados")
+                .help("Expand vertical list of paired Bluetooth devices")
 
                 Button {
                     registry.cycleNextBluetoothDevice()
@@ -122,7 +122,7 @@ public struct TactileTelemetryDialView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Próximo dispositivo Bluetooth")
+                .help("Next paired Bluetooth device")
             }
 
             if registry.isShowingBluetoothList {
@@ -247,7 +247,7 @@ public struct TactileTelemetryDialView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .help(bt.isConnected ? "Desconectar \(bt.name)" : "Conectar \(bt.name)")
+                            .help(bt.isConnected ? "Disconnect \(bt.name)" : "Connect \(bt.name)")
                         }
                     }
                     .padding(6.5)
@@ -478,7 +478,7 @@ public struct TactileTelemetryDialView: View {
             }
         }
         .buttonStyle(.plain)
-        .help("Clique no centro do disco para alternar entre os volumes montados")
+        .help("Click the dial core to cycle through mounted storage volumes")
     }
 
     // MARK: - Right Column: Storage Volumes Selector
@@ -504,7 +504,7 @@ public struct TactileTelemetryDialView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Volume anterior")
+                .help("Previous storage volume")
 
                 Button {
                     registry.isShowingVolumeList.toggle()
@@ -548,7 +548,7 @@ public struct TactileTelemetryDialView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Abrir lista vertical de todos os discos montados")
+                .help("Expand vertical list of mounted storage volumes")
 
                 Button {
                     registry.cycleNextVolume()
@@ -568,7 +568,7 @@ public struct TactileTelemetryDialView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Próximo volume")
+                .help("Next storage volume")
             }
 
             if registry.isShowingVolumeList {
@@ -673,7 +673,7 @@ public struct TactileTelemetryDialView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .help("Abrir este volume no Finder")
+                            .help("Reveal volume in Finder")
 
                             if vol.isEjectable {
                                 Button {
@@ -695,7 +695,7 @@ public struct TactileTelemetryDialView: View {
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
-                                .help("Ejetar apenas o volume selecionado (\(vol.name))")
+                                .help("Safely eject selected volume (\(vol.name))")
                             }
                         }
                     }

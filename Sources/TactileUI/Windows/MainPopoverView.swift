@@ -136,7 +136,7 @@ public struct MainPopoverView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .help("Mostrar/ocultar o Deck de Telemetria (Bluetooth, Disco Concêntrico e Volumes)")
+                .help("Show or hide the Concentric Telemetry Deck (Bluetooth RF, Rotary Dial & Storage Volumes)")
 
                 Text(String(format: "SW %02d/%02d", registry.activeSwitchCount, registry.switches.count))
                     .font(.system(size: 9.5, weight: .bold, design: .monospaced))
@@ -169,7 +169,7 @@ public struct MainPopoverView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .help("Sincronizar estado de todos os 26 módulos, discos e dispositivos Bluetooth")
+                .help("Synchronize telemetry across all 26 switches, storage volumes, and Bluetooth devices")
             }
         }
         .padding(.horizontal, 16)

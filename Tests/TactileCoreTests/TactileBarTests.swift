@@ -16,7 +16,7 @@ final class TactileBarTests: XCTestCase {
         XCTAssertEqual(ids.last, "SW.26")
     }
 
-    func testDomainDistributionMatchesCleanRoomSpecification() {
+    func testDomainDistributionMatchesTelemetryCatalog() {
         let switches = TactileSwitchCatalog.makeAllSwitches()
         let powerCount = switches.filter { $0.domain == .power }.count
         let opticsCount = switches.filter { $0.domain == .optics }.count

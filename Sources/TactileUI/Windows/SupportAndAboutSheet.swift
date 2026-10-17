@@ -69,11 +69,11 @@ public struct SupportAndAboutSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Open-Source Clean-Room Architecture")
-                        .font(.system(size: 13, weight: .semibold))
+                    Text("Precision Telemetry & Control for macOS")
+                        .font(.system(size: 13.5, weight: .semibold))
                         .foregroundStyle(TactilePalette.ivoryText)
 
-                    Text("Desenvolvido de forma independente em Swift 6 com 26 módulos nativos. Se esta ferramenta economiza o seu tempo no dia a dia, apoie o projeto via GitHub Sponsors.")
+                    Text("Engineered natively in Swift with 26 hardware-inspired switches, live storage telemetry, and direct Bluetooth RF control. If TactileBar streamlines your daily workflow, consider supporting its continued development.")
                         .font(.system(size: 11.5))
                         .foregroundStyle(TactilePalette.silverMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -102,7 +102,7 @@ public struct SupportAndAboutSheet: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "star.fill")
-                                Text("GITHUB REPO")
+                                Text("STAR ON GITHUB")
                                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                             }
                             .padding(.horizontal, 12)
@@ -123,13 +123,13 @@ public struct SupportAndAboutSheet: View {
                 .frame(height: 1)
 
             HStack {
-                Text("TELEMETRY // ACIONAMENTOS TOTAIS: \(totalTriggerCount)")
+                Text("TELEMETRY // TOTAL ACTUATIONS: \(totalTriggerCount)")
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(TactilePalette.oscilloscopeCyan)
 
                 Spacer()
 
-                Text("MIT LICENSE // ZERO EXTERNAL DEPENDENCIES")
+                Text("MIT LICENSE // NATIVE SWIFT INSTRUMENT")
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
                     .foregroundStyle(TactilePalette.slateDim)
             }
