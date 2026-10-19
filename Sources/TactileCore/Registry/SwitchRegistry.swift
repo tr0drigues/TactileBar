@@ -11,7 +11,16 @@ public final class SwitchRegistry {
         }
     }
     public var isShowingPinnedOnly: Bool = true
-    public private(set) var pinnedSwitchIDs: Set<String>
+    /// Pins na ordem em que foram fixados.
+    public private(set) var pinnedOrder: [String]
+    public var pinnedSwitchIDs: Set<String> {
+        Set(pinnedOrder)
+    }
+    /// Quantas vezes cada switch foi acionado (base da ordem do anel).
+    public private(set) var switchTriggerCounts: [String: Int]
+    /// Switch fixado em cada uma das 8 posições do anel, por rank.
+    public private(set) var ringSlots: [String?]
+    public let ringPreferences: RingPreferences
     public var searchQuery: String = ""
     public var isShowingSupportSheet: Bool = false
     public var isShowingRadialDial: Bool = true
@@ -35,6 +44,8 @@ public final class SwitchRegistry {
     ]
     public static let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
     public static let pinnedSwitchesStorageKey = "studio.tactile.TactileBar.pinnedSwitchIDs"
+    public static let switchTriggerCountsStorageKey = "studio.tactile.TactileBar.switchTriggerCounts"
+    public static let ringSlotsStorageKey = "studio.tactile.TactileBar.ring.slots"
     private let triggerCountStorageKey = "studio.tactile.TactileBar.totalTriggerCount"
     private let userDefaults: UserDefaults
 
@@ -45,11 +56,24 @@ public final class SwitchRegistry {
         self.switches = switches
         self.userDefaults = userDefaults
         self.totalTriggerCount = userDefaults.integer(forKey: triggerCountStorageKey)
-        if let savedPins = userDefaults.stringArray(forKey: Self.pinnedSwitchesStorageKey) {
-            self.pinnedSwitchIDs = Set(savedPins)
+        let savedPins = userDefaults.stringArray(forKey: Self.pinnedSwitchesStorageKey) ?? Self.defaultPinnedSwitchIDs
+        var seenPins = Set<String>()
+        let pins = savedPins.filter { seenPins.insert($0).inserted }
+        self.pinnedOrder = pins
+        let counts = (userDefaults.dictionary(forKey: Self.switchTriggerCountsStorageKey) as? [String: Int]) ?? [:]
+        self.switchTriggerCounts = counts
+        if let savedSlots = userDefaults.stringArray(forKey: Self.ringSlotsStorageKey) {
+            self.ringSlots = RingOrdering.reconcile(
+                slots: savedSlots.map { $0.isEmpty ? nil : $0 },
+                pinnedOrder: pins,
+                usageCounts: counts
+            )
         } else {
-            self.pinnedSwitchIDs = Set(Self.defaultPinnedSwitchIDs)
+            self.ringSlots = RingOrdering.layout(
+                ranked: RingOrdering.rankedByUsage(pinnedOrder: pins, usageCounts: counts)
+            )
         }
+        self.ringPreferences = RingPreferences(userDefaults: userDefaults)
         self.hardwareTelemetry = HardwareTelemetryService.shared.captureSnapshot()
         let initialVolumes = DiskVolumeTelemetryService.listMountedVolumes()
         self.mountedVolumes = initialVolumes
@@ -112,21 +136,54 @@ public final class SwitchRegistry {
     }
 
     public func isPinned(_ switchID: String) -> Bool {
-        pinnedSwitchIDs.contains(switchID)
+        pinnedOrder.contains(switchID)
     }
 
     public func togglePin(forSwitchID switchID: String) {
-        if pinnedSwitchIDs.contains(switchID) {
-            pinnedSwitchIDs.remove(switchID)
+        if let index = pinnedOrder.firstIndex(of: switchID) {
+            pinnedOrder.remove(at: index)
         } else {
-            pinnedSwitchIDs.insert(switchID)
+            pinnedOrder.append(switchID)
         }
-        userDefaults.set(Array(pinnedSwitchIDs).sorted(), forKey: Self.pinnedSwitchesStorageKey)
+        userDefaults.set(pinnedOrder, forKey: Self.pinnedSwitchesStorageKey)
+        reconcileRingSlots()
     }
 
     public func restoreDefaultPins() {
-        pinnedSwitchIDs = Set(Self.defaultPinnedSwitchIDs)
+        pinnedOrder = Self.defaultPinnedSwitchIDs
         userDefaults.set(Self.defaultPinnedSwitchIDs, forKey: Self.pinnedSwitchesStorageKey)
+        reconcileRingSlots()
+    }
+
+    // MARK: - Radial Ring Ordering
+
+    public var ringOverflowCount: Int {
+        RingOrdering.overflowCount(slots: ringSlots, pinnedOrder: pinnedOrder)
+    }
+
+    public func switchItem(withID id: String) -> (any TactileSwitchProtocol)? {
+        switches.first(where: { $0.id == id })
+    }
+
+    /// Recalcula todas as posições do anel pelo uso. Só roda quando o usuário pede.
+    public func reorderRingByUsage() {
+        ringSlots = RingOrdering.layout(
+            ranked: RingOrdering.rankedByUsage(pinnedOrder: pinnedOrder, usageCounts: switchTriggerCounts)
+        )
+        persistRingSlots()
+    }
+
+    private func reconcileRingSlots() {
+        ringSlots = RingOrdering.reconcile(
+            slots: ringSlots,
+            pinnedOrder: pinnedOrder,
+            usageCounts: switchTriggerCounts
+        )
+        persistRingSlots()
+    }
+
+    private func persistRingSlots() {
+        userDefaults.set(ringSlots.map { $0 ?? "" }, forKey: Self.ringSlotsStorageKey)
     }
 
     public func selectPinnedFilter() {
@@ -155,6 +212,8 @@ public final class SwitchRegistry {
         await target.trigger()
         totalTriggerCount += 1
         userDefaults.set(totalTriggerCount, forKey: triggerCountStorageKey)
+        switchTriggerCounts[id, default: 0] += 1
+        userDefaults.set(switchTriggerCounts, forKey: Self.switchTriggerCountsStorageKey)
         refreshDiskVolumes()
         refreshHardwareTelemetry()
     }
@@ -287,6 +346,32 @@ public final class SwitchRegistry {
         }
     }
 
+    // MARK: - Escolhas no anel
+
+    /// Opções do leque do anel para o switch; vazio quando ele não tem escolhas.
+    public func ringChoices(forSwitchID id: String) -> [RingChoice] {
+        guard id == "SW.17" else { return [] }
+        let preferredID = selectedBluetoothDevice?.id
+        return pairedBluetoothDevices.map { device in
+            RingChoice(
+                id: device.id,
+                title: device.name.uppercased(),
+                badge: device.kindBadge,
+                isActive: device.isConnected,
+                isPreferred: device.id == preferredID
+            )
+        }
+    }
+
+    /// Aciona uma escolha do leque. No Bluetooth, o dispositivo escolhido vira o preferido.
+    public func triggerRingChoice(switchID: String, choiceID: String) async {
+        guard switchID == "SW.17",
+              let device = pairedBluetoothDevices.first(where: { $0.id == choiceID }) else { return }
+        await toggleBluetoothDevice(device)
+        switchTriggerCounts[switchID, default: 0] += 1
+        userDefaults.set(switchTriggerCounts, forKey: Self.switchTriggerCountsStorageKey)
+    }
+
     public func refreshHardwareTelemetry() {
         let updated = HardwareTelemetryService.shared.captureSnapshot()
         if hardwareTelemetry != updated {
@@ -320,20 +405,20 @@ public final class SwitchRegistry {
             .map(\.id)
             .filter { !primarySet.contains($0) }
 
-        await withTaskGroup(of: Void.self) { group in
-            for id in primaryIDs {
-                group.addTask { @MainActor [weak self] in
-                    await self?.refreshSwitch(withID: id)
-                }
+        await refreshSwitchesConcurrently(primaryIDs)
+        await refreshSwitchesConcurrently(secondaryIDs)
+    }
+
+    /// Dispara as atualizações juntas (intercaladas no MainActor) e espera todas terminarem.
+    /// Substitui um TaskGroup com filhos @MainActor que o checker de isolamento do Swift 6 rejeita.
+    private func refreshSwitchesConcurrently(_ ids: [String]) async {
+        let tasks = ids.map { id in
+            Task { [weak self] in
+                await self?.refreshSwitch(withID: id)
             }
         }
-
-        await withTaskGroup(of: Void.self) { group in
-            for id in secondaryIDs {
-                group.addTask { @MainActor [weak self] in
-                    await self?.refreshSwitch(withID: id)
-                }
-            }
+        for task in tasks {
+            await task.value
         }
     }
 }

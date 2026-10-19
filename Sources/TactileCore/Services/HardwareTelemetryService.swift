@@ -167,7 +167,12 @@ public final class HardwareTelemetryService {
             return (0.5, 50, "0.0 / 0.0 GB")
         }
 
-        let pageSize = UInt64(vm_kernel_page_size)
+        // host_page_size em vez da global vm_kernel_page_size, que não é concurrency-safe no Swift 6.
+        var kernelPageSize: vm_size_t = 0
+        if host_page_size(mach_host_self(), &kernelPageSize) != KERN_SUCCESS || kernelPageSize == 0 {
+            kernelPageSize = vm_size_t(getpagesize())
+        }
+        let pageSize = UInt64(kernelPageSize)
         let activePages = UInt64(vmStats.active_count)
         let wiredPages = UInt64(vmStats.wire_count)
         let compressedPages = UInt64(vmStats.compressor_page_count)

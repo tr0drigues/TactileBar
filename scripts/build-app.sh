@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Caminhos abaixo são relativos à raiz do pacote, de onde quer que o script seja chamado.
+cd "$(dirname "$0")/.."
+
 APP_NAME="TactileBar"
 BUNDLE_ID="studio.tactile.TactileBar"
 VERSION="1.3.1"
@@ -22,6 +25,7 @@ if ! swift build -c release 2>/dev/null; then
         Sources/TactileCore/Configuration/*.swift \
         Sources/TactileCore/Contracts/*.swift \
         Sources/TactileCore/Registry/*.swift \
+        Sources/TactileCore/Ring/*.swift \
         Sources/TactileCore/Services/*.swift
 
     swiftc -module-cache-path "${CACHE_DIR}" -O -swift-version 6 \
@@ -51,12 +55,21 @@ if ! swift build -c release 2>/dev/null; then
         Sources/TactileUI/Windows/*.swift
 
     swiftc -module-cache-path "${CACHE_DIR}" -O -swift-version 6 \
+        -I "${BUILD_DIR}" \
+        -emit-module -emit-library -static \
+        -module-name TactileRing \
+        -o "${BUILD_DIR}/libTactileRing.a" \
+        -emit-module-path "${BUILD_DIR}/TactileRing.swiftmodule" \
+        Sources/TactileRing/*.swift
+
+    swiftc -module-cache-path "${CACHE_DIR}" -O -swift-version 6 \
         -parse-as-library \
         -I "${BUILD_DIR}" \
         "${BUILD_DIR}/libTactileCore.a" \
         "${BUILD_DIR}/libSystemAdapters.a" \
         "${BUILD_DIR}/libSwitchCatalog.a" \
         "${BUILD_DIR}/libTactileUI.a" \
+        "${BUILD_DIR}/libTactileRing.a" \
         -o "${BUILD_DIR}/${APP_NAME}" \
         Sources/TactileBarApp/*.swift
 fi
