@@ -238,6 +238,8 @@ public struct MainPopoverView: View {
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
                     .foregroundStyle(isSelected ? accent.opacity(0.9) : TactilePalette.slateDim)
             }
+            .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
@@ -295,6 +297,8 @@ public struct MainPopoverView: View {
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
                     .foregroundStyle(isSelected ? accent.opacity(0.9) : TactilePalette.slateDim)
             }
+            .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(

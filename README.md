@@ -2,7 +2,7 @@
 
 ```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  SYS.INSTRUMENT // M.01–M.05               TACTILE TELEMETRY DECK · v1.3.0   ┃
+┃  SYS.INSTRUMENT // M.01–M.05               TACTILE TELEMETRY DECK · v1.3.1   ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
@@ -11,7 +11,7 @@
 ### **Precision Menu Bar Telemetry & Hardware-Inspired Command Deck for macOS**
 *Instrumento de Telemetria de Precisão e Deck de Comando Tátil para a Barra de Menus do macOS*
 
-[![Version](https://img.shields.io/badge/RELEASE-v1.3.0-F59E0B?style=for-the-badge)](https://github.com/tr0drigues/TactileBar/releases/latest)
+[![Version](https://img.shields.io/badge/RELEASE-v1.3.1-F59E0B?style=for-the-badge)](https://github.com/tr0drigues/TactileBar/releases/latest)
 [![Homebrew](https://img.shields.io/badge/HOMEBREW-CASK%20READY-FBB040?style=for-the-badge&logo=homebrew&logoColor=white)](#-instant-install--instalação-instantânea-homebrew)
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-0B0C0E?style=for-the-badge&logo=apple&logoColor=F4F4F0)](https://github.com/tr0drigues/TactileBar/releases)
 [![Swift 6](https://img.shields.io/badge/SWIFT-5.10%20%7C%206.0-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
