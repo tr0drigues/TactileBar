@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "SystemAdapters", targets: ["SystemAdapters"]),
         .library(name: "SwitchCatalog", targets: ["SwitchCatalog"]),
         .library(name: "TactileUI", targets: ["TactileUI"]),
+        .library(name: "TactileRing", targets: ["TactileRing"]),
         .executable(name: "TactileBar", targets: ["TactileBarApp"])
     ],
     targets: [
@@ -44,9 +45,18 @@ let package = Package(
             dependencies: ["TactileCore", "SwitchCatalog"],
             path: "Sources/TactileUI"
         ),
+        .target(
+            name: "TactileRing",
+            dependencies: ["TactileCore", "TactileUI"],
+            path: "Sources/TactileRing",
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+                .linkedFramework("Carbon")
+            ]
+        ),
         .executableTarget(
             name: "TactileBarApp",
-            dependencies: ["TactileCore", "SystemAdapters", "SwitchCatalog", "TactileUI"],
+            dependencies: ["TactileCore", "SystemAdapters", "SwitchCatalog", "TactileUI", "TactileRing"],
             path: "Sources/TactileBarApp"
         ),
         .testTarget(

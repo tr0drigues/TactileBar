@@ -403,6 +403,8 @@ public struct MainPopoverView: View {
             }
             .buttonStyle(.plain)
 
+            ringToggleButton
+
             if let update = registry.availableUpdate {
                 Button {
                     NSWorkspace.shared.open(update.releasePageURL)
@@ -443,5 +445,44 @@ public struct MainPopoverView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(TactilePalette.obsidianBackground)
+    }
+
+    private var ringToggleButton: some View {
+        let preferences = registry.ringPreferences
+        let isOn = preferences.isEnabled
+        return Button {
+            preferences.isEnabled.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "circle.circle")
+                    .font(.system(size: 9, weight: .bold))
+                Text(isOn ? "RING \(RingPreferences.hotKeyLabel)" : "RING: OFF")
+                    .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isOn ? TactilePalette.tungstenAmber.opacity(0.18) : TactilePalette.graphitePanel)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(isOn ? TactilePalette.tungstenAmber : TactilePalette.gridLine, lineWidth: 1)
+                    )
+            )
+            .foregroundStyle(isOn ? TactilePalette.tungstenAmber : TactilePalette.silverMuted)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                registry.reorderRingByUsage()
+            } label: {
+                Label("Reorder Ring by Usage", systemImage: "arrow.up.arrow.down")
+            }
+        }
+        .help(
+            isOn
+                ? "Radial Ring is on — hold \(RingPreferences.hotKeyLabel) anywhere to open your pinned switches. Right-click to reorder by usage."
+                : "Turn on the Radial Ring: hold \(RingPreferences.hotKeyLabel) anywhere to fire your pinned switches at the cursor."
+        )
     }
 }

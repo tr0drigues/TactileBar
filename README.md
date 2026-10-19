@@ -152,6 +152,21 @@ TactileBar requests permissions only when you trigger a switch that requires the
 * **Bluetooth (`IOBluetooth`)**: Used by the Left Telemetry Deck and `SW.17`.
 * If a permission is missing, the switch displays **`GRANT PERMISSION`** and opens the exact pane in **System Settings → Privacy & Security** when clicked.
 
+#### 7. Radial Ring (`RING ⌃⌥SPACE`) — Experimental
+Fire your pinned switches anywhere, without opening the menu bar popover. Turn it on with the **`RING: OFF`** button in the popover footer.
+
+<p align="center">
+  <img src="tactile-ring-preview.png" alt="Tactile Ring open at the cursor with MUTE MIC in focus" width="49%">
+  <img src="tactile-ring-bluetooth.png" alt="Tactile Ring with the Bluetooth device fan open" width="49%">
+</p>
+
+* **Hold `⌃⌥Space`**: the ring opens at the cursor. Move toward a switch and **release** to fire it. Release in the center (or press `Esc`) to cancel.
+* **Quick tap `⌃⌥Space`**: the ring stays open. Click a slice, press **`1`–`8`**, or use the arrow keys and `Return`. `Esc` closes it.
+* **Pinned first, in stable places**: your most-used pins take the top, right, bottom and left positions. Positions never shuffle on their own; right-click the footer button → **Reorder Ring by Usage** when you want them recomputed.
+* **Pick a Bluetooth device**: `BT AUDIO LINK` shows a small `▸` mark. Releasing on it toggles your preferred device, as before. Push past the slice edge (or rest on it for a moment) to fan out your paired devices and release on the one you want; it becomes the new preferred device. With the ring latched, press `Tab` to open the fan, `1`–`8` to pick, and `Esc` to go back.
+* **Safety**: purge switches (`SW.22`–`SW.25`) must be held over for a moment until the arc completes; a release that is too fast is ignored.
+* **No new permissions**: the global shortcut uses Carbon `RegisterEventHotKey`, which needs neither Accessibility nor Input Monitoring.
+
 ---
 
 ### Complete 26-Switch Technical Catalog
@@ -269,6 +284,21 @@ O TactileBar opera estritamente em *user-space* e solicita permissões apenas qu
 * **Acessibilidade (`CGEventTap`)**: Necessária apenas para o módulo `SW.20 Lock Keyboard`.
 * **Bluetooth (`IOBluetooth`)**: Utilizada pelo Deck Bluetooth e pelo módulo `SW.17`.
 * Caso alguma permissão não tenha sido concedida, o cartão exibe **`GRANT PERMISSION`** e abre diretamente a seção correspondente em **Ajustes do Sistema → Privacidade e Segurança**.
+
+#### 7. Anel Radial (`RING ⌃⌥SPACE`) — Experimental
+Acione seus interruptores fixados em qualquer lugar, sem abrir o painel da barra de menus. Ative pelo botão **`RING: OFF`** no rodapé do painel.
+
+<p align="center">
+  <img src="tactile-ring-preview.png" alt="Anel Tactile aberto no cursor com MUTE MIC em foco" width="49%">
+  <img src="tactile-ring-bluetooth.png" alt="Anel Tactile com o leque de dispositivos Bluetooth aberto" width="49%">
+</p>
+
+* **Segure `⌃⌥Space`**: o anel abre no cursor. Mova até um interruptor e **solte** para acioná-lo. Solte no centro (ou pressione `Esc`) para cancelar.
+* **Toque rápido em `⌃⌥Space`**: o anel fica aberto. Clique numa fatia, tecle **`1`–`8`** ou use as setas e `Return`. `Esc` fecha.
+* **Escolher um dispositivo Bluetooth**: `BT AUDIO LINK` mostra uma pequena marca `▸`. Soltar sobre ela liga ou desliga o dispositivo preferido, como antes. Empurre além da borda da fatia (ou pare um instante sobre ela) para abrir o leque com os dispositivos pareados e solte no que quiser; ele vira o novo preferido. Com o anel fixo, `Tab` abre o leque, `1`–`8` escolhem e `Esc` volta.
+* **Fixados primeiro, em lugares estáveis**: os pins mais usados ficam no topo, à direita, embaixo e à esquerda. As posições nunca mudam sozinhas; clique com o botão direito no botão do rodapé → **Reorder Ring by Usage** quando quiser recalcular.
+* **Segurança**: interruptores de limpeza (`SW.22`–`SW.25`) exigem parar sobre a fatia até o arco completar; soltar rápido demais é ignorado.
+* **Sem permissões novas**: o atalho global usa `RegisterEventHotKey` (Carbon), que não exige Acessibilidade nem Monitoramento de Entrada.
 
 ---
 
