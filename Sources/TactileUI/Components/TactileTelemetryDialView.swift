@@ -506,7 +506,9 @@ private struct ConcentricTelemetryDialCanvasView: View {
                         let endAngle = startAngle + angleStep * 0.78
                         let midAngle = startAngle + angleStep * 0.39
                         let accent = TactilePalette.accentColor(for: item.domain)
-                        let isDomainSelected = registry.selectedDomainFilter == nil || registry.selectedDomainFilter == item.domain
+                        let isDomainSelected = registry.isShowingPinnedOnly
+                            ? registry.isPinned(item.id)
+                            : (registry.selectedDomainFilter == nil || registry.selectedDomainFilter == item.domain)
                         let isOn = item.state.isEnabled
 
                         var arcSegment = Path()

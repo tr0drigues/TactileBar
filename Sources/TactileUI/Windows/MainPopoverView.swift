@@ -190,7 +190,10 @@ public struct MainPopoverView: View {
     }
 
     private var domainFilterBar: some View {
-        HStack(spacing: 6) {
+        let pinCounts = registry.pinnedCounts
+        return HStack(spacing: 5) {
+            pinnedTabButton(countBadge: "\(pinCounts.active)/\(pinCounts.total)")
+
             ForEach(SwitchDomain.allCases, id: \.self) { domain in
                 let counts = registry.domainCounts(for: domain)
                 domainTabButton(
@@ -202,7 +205,7 @@ public struct MainPopoverView: View {
                 )
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
 
             domainTabButton(
                 label: "ALL",
@@ -214,6 +217,41 @@ public struct MainPopoverView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
+    }
+
+    private func pinnedTabButton(countBadge: String) -> some View {
+        let isSelected = registry.isShowingPinnedOnly
+        let accent = TactilePalette.tungstenAmber
+        return Button {
+            registry.selectPinnedFilter()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(isSelected ? accent : accent.opacity(0.75))
+
+                Text("PIN")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(isSelected ? accent : TactilePalette.ivoryText)
+
+                Text(countBadge)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(isSelected ? accent.opacity(0.9) : TactilePalette.slateDim)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(isSelected ? accent.opacity(0.18) : TactilePalette.graphitePanel)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(isSelected ? accent : TactilePalette.gridLine, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut("p", modifiers: .command)
+        .help("Pinned Daily Switches — 'Less, but better' (⌘P)")
     }
 
     private func shortcutKey(for domain: SwitchDomain) -> KeyEquivalent {
@@ -238,9 +276,9 @@ public struct MainPopoverView: View {
         accent: Color,
         shortcutKey: KeyEquivalent
     ) -> some View {
-        let isSelected = registry.selectedDomainFilter == domain
+        let isSelected = !registry.isShowingPinnedOnly && registry.selectedDomainFilter == domain
         return Button {
-            registry.selectedDomainFilter = domain
+            registry.selectDomainFilter(domain)
         } label: {
             HStack(spacing: 5) {
                 if domain != nil {
@@ -257,7 +295,7 @@ public struct MainPopoverView: View {
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
                     .foregroundStyle(isSelected ? accent.opacity(0.9) : TactilePalette.slateDim)
             }
-            .padding(.horizontal, 9)
+            .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 5)
@@ -274,17 +312,63 @@ public struct MainPopoverView: View {
 
     private var switchGridSection: some View {
         ScrollView {
-            LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
-                ForEach(registry.filteredSwitches, id: \.id) { item in
-                    TactileSwitchCardView(item: item) {
-                        Task {
-                            await registry.triggerSwitch(withID: item.id)
-                        }
+            if registry.isShowingPinnedOnly && registry.filteredSwitches.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "pin.slash")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(TactilePalette.tungstenAmber)
+
+                    Text("NO PINNED SWITCHES IN DECK")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(TactilePalette.ivoryText)
+
+                    Text("Select any domain tab (PWR–SEC or ALL) and click the pin icon on your daily switches, or restore the default 6-switch deck.")
+                        .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+                        .foregroundStyle(TactilePalette.silverMuted)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 380)
+
+                    Button {
+                        registry.restoreDefaultPins()
+                    } label: {
+                        Text("RESTORE DEFAULT PINS (6)")
+                            .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(TactilePalette.tungstenAmber.opacity(0.2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .strokeBorder(TactilePalette.tungstenAmber, lineWidth: 1)
+                                    )
+                            )
+                            .foregroundStyle(TactilePalette.tungstenAmber)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 36)
+            } else {
+                LazyVGrid(columns: gridColumns, spacing: AppConfiguration.LayoutMetrics.gridSpacing) {
+                    ForEach(registry.filteredSwitches, id: \.id) { item in
+                        TactileSwitchCardView(
+                            item: item,
+                            isPinned: registry.isPinned(item.id),
+                            onTrigger: {
+                                Task {
+                                    await registry.triggerSwitch(withID: item.id)
+                                }
+                            },
+                            onTogglePin: {
+                                registry.togglePin(forSwitchID: item.id)
+                            }
+                        )
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
         }
         .scrollIndicators(.automatic)
     }

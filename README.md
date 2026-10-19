@@ -2,7 +2,7 @@
 
 ```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  SYS.INSTRUMENT // M.01–M.05               TACTILE TELEMETRY DECK · v1.2.0   ┃
+┃  SYS.INSTRUMENT // M.01–M.05               TACTILE TELEMETRY DECK · v1.3.0   ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
@@ -11,7 +11,7 @@
 ### **Precision Menu Bar Telemetry & Hardware-Inspired Command Deck for macOS**
 *Instrumento de Telemetria de Precisão e Deck de Comando Tátil para a Barra de Menus do macOS*
 
-[![Version](https://img.shields.io/badge/RELEASE-v1.2.0-F59E0B?style=for-the-badge)](https://github.com/tr0drigues/TactileBar/releases/latest)
+[![Version](https://img.shields.io/badge/RELEASE-v1.3.0-F59E0B?style=for-the-badge)](https://github.com/tr0drigues/TactileBar/releases/latest)
 [![Homebrew](https://img.shields.io/badge/HOMEBREW-CASK%20READY-FBB040?style=for-the-badge&logo=homebrew&logoColor=white)](#-instant-install--instalação-instantânea-homebrew)
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-0B0C0E?style=for-the-badge&logo=apple&logoColor=F4F4F0)](https://github.com/tr0drigues/TactileBar/releases)
 [![Swift 6](https://img.shields.io/badge/SWIFT-5.10%20%7C%206.0-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
@@ -86,11 +86,11 @@ Developers, designers, and power users toggle the same system states dozens of t
 
 | Pillar | Engineering Specification |
 | :--- | :--- |
+| **`📌 PIN` Curated Daily Deck (*"Less, but better"*)** | Opens by default on your **Pinned Deck (`⌘P`)**—displaying only your curated 4–6 daily-driver switches (`Keep Awake`, `Dark Mode`, `Hide Desktop Icons`, `Mute Mic`, `Bluetooth Audio`, `Purge Xcode Cache` by default) while keeping the full 26-switch catalog organized across the 5 domain tabs (`⌘1`–`⌘5`) and `ALL` (`⌘0`). Click the pin icon or right-click any switch card to pin/unpin. |
 | **Left Deck — Bluetooth RF & CPU/RAM** | Cycle through paired headphones, speakers, and controllers (`EDIFIER`, `JBL`, `AirPods`, `DualSense`) via stepper buttons or an expandable dropdown list and connect/disconnect in **1 click** (`IOBluetooth`). Below it, live Mach kernel gauges read **`CPU.LOAD`** (`USER / SYS %`) and **`MEM.RAM`** (`Used / Total GB`). |
 | **Centerpiece — Concentric Rotary Dial** | A 26-sector radial chronograph mapping active system switches on its outer bezel and **3 concentric hardware rings** inside: **CPU Load (Amber)**, **RAM Pressure (Emerald)**, and **Storage Saturation (Cyan)**. Click the center core to cycle mounted disks. |
 | **Right Deck — Storage & Power/Thermal** | Inspect free capacity across internal and external drives (`Macintosh HD`, `DADOS`, SD cards), reveal in Finder (`OPEN`), or unmount individual external drives (`EJECT ⏏`), paired with live **`PWR.SOURCE`** (`IOKit`) and **`THERMAL`** (`ProcessInfo`) gauges. |
-| **26 Bespoke Vector Schematics** | Every switch (`SW.01` to `SW.26`) is drawn procedurally inside a 12-tick horological bezel—no generic stock icons. |
-| **Zero-Scroll & `0.0%` Idle CPU** | Calibrated `540×576pt` frame where every domain tab (`PWR`, `OPT`, `WKS`, `SIG`, `SEC`) fits without scrolling. Isolated `@Observable` subviews, cached `NSImage` status bar icons, zero `GeometryReader` overhead, and Mach sampling active **only** while the popover is visible. |
+| **Zero-Scroll & `0.0%` Idle CPU** | Calibrated `540×576pt` frame where every domain tab (`PIN`, `PWR`, `OPT`, `WKS`, `SIG`, `SEC`) fits without scrolling. Isolated `@Observable` subviews, cached `NSImage` status bar icons, zero `GeometryReader` overhead, and Mach sampling active **only** while the popover is visible. |
 
 ---
 
@@ -112,11 +112,12 @@ From left to right across the top header bar:
 4. **`↻` Refresh Button (`⌘R`)**:
    * Triggers a parallelized `TaskGroup` state synchronization across all 26 switches, mounted disk volumes, paired Bluetooth devices, and Mach hardware sensors.
 
-#### 3. Domain Navigation & Keyboard Shortcuts
-Navigate across the 5 hardware domains using mouse clicks or native keyboard shortcuts:
+#### 3. Pinned Daily Deck (`PIN`) & Domain Navigation Shortcuts
+Following Dieter Rams' *"Weniger, aber besser"* (*"Less, but better"*), TactileBar opens on the **`📌 PIN`** tab showing your curated daily switches. Click the **pin icon** on the right edge of any card (or **right-click** any card) to pin or unpin it:
 
 | Shortcut | Tab Badge | Domain Title | Switch Count | Primary Accent |
 | :---: | :---: | :--- | :---: | :--- |
+| **`⌘P`** | `📌 PIN` | **Curated Daily Deck (Default View)** | Custom (6 default) | Tungsten Amber (`#F59E0B`) |
 | **`⌘1`** | `PWR` | `M.01 // POWER & SLEEP` | 5 | Tungsten Amber (`#F59E0B`) |
 | **`⌘2`** | `OPT` | `M.02 // OPTICS & LUMINANCE` | 4 | Warm Ivory (`#F4F4F0`) |
 | **`⌘3`** | `WKS` | `M.03 // SPATIAL WORKSPACE` | 6 | Oscilloscope Cyan (`#38BDF8`) |
@@ -203,11 +204,11 @@ O **TactileBar** substitui menus espalhados por um **Instrumento de Telemetria T
 
 | Pilar | Especificação Técnica |
 | :--- | :--- |
+| **Aba `📌 PIN` — Favoritos do Dia a Dia (*"Menos, porém melhor"*)** | Abre por padrão no seu **Deck Fixado (`⌘P`)** com os seus interruptores mais usados (`Keep Awake`, `Dark Mode`, `Hide Desktop Icons`, `Mute Mic`, `Bluetooth Audio` e `Purge Xcode Cache` pré-configurados), mantendo o catálogo completo de 26 módulos organizado nas 5 abas (`⌘1`–`⌘5`) e em `ALL` (`⌘0`). Clique no ícone de pino ou com o botão direito em qualquer cartão para fixar/desafixar. |
 | **Deck Esquerdo — Bluetooth RF & CPU/RAM** | Percorra todos os seus fones, caixas de som e controles pareados (`EDIFIER`, `JBL`, `AirPods`, `DualSense`) pelos botões `[ ◀ ]` / `[ ▶ ]` ou lista vertical expansível e conecte/desconecte com **1 clique** (`IOBluetooth`). Abaixo, medidores nativos do kernel Mach exibem **`CPU.LOAD`** (`USER / SYS %`) e **`MEM.RAM`** (`GB Usados / Total`). |
 | **Centro — Mostrador Concêntrico Triplo** | Cronógrafo radial de 26 setores que mapeia os módulos ativos no anel externo e **3 anéis concêntricos de hardware** no interior: **Carga de CPU (Âmbar)**, **Pressão de Memória RAM (Esmeralda)** e **Ocupação do Disco (Ciano)**. Clique no núcleo para alternar entre discos. |
 | **Deck Direito — Discos & Energia/Térmico** | Acompanhe espaço livre de cada volume interno ou externo (`Macintosh HD`, `DADOS`, cartões SD), abra no Finder (`OPEN`) ou ejete discos removíveis individualmente (`EJECT ⏏`), junto aos medidores **`PWR.SOURCE`** (`IOKit`) e **`THERMAL`** (`ProcessInfo`). |
-| **26 Esquemáticos Vetoriais Exclusivos** | Cada módulo (`SW.01` a `SW.26`) possui uma gravura técnica vetorial própria dentro de uma moldura horológica de 12 marcações. |
-| **Zero-Rolagem e `0.0%` de CPU Ociosa** | Painel calibrado em `540×576pt` onde todas as 5 abas (`PWR`, `OPT`, `WKS`, `SIG`, `SEC`) cabem sem barra de rolagem. Subviews `@Observable` isoladas, cache de `NSImage`, zero `GeometryReader` e leitura Mach ativa **somente** enquanto o painel está aberto. |
+| **Zero-Rolagem e `0.0%` de CPU Ociosa** | Painel calibrado em `540×576pt` onde todas as abas (`PIN`, `PWR`, `OPT`, `WKS`, `SIG`, `SEC`) cabem sem barra de rolagem. Subviews `@Observable` isoladas, cache de `NSImage`, zero `GeometryReader` e leitura Mach ativa **somente** enquanto o painel está aberto. |
 
 ---
 
@@ -229,11 +230,12 @@ Da esquerda para a direita no cabeçalho superior:
 4. **Botão de Sincronização `↻` (`⌘R`)**:
    * Dispara uma varredura paralela (`TaskGroup`) atualizando o estado dos 26 interruptores, volumes montados, dispositivos Bluetooth pareados e sensores Mach de hardware.
 
-#### 3. Navegação por Domínios e Atalhos de Teclado
-Alterne entre os 5 domínios funcionais clicando nas abas ou usando atalhos nativos de teclado:
+#### 3. Deck de Favoritos (`PIN`) e Atalhos de Teclado
+Seguindo o princípio *"Weniger, aber besser"* (*"Menos, porém melhor"*) de Dieter Rams, o TactileBar inicia na aba **`📌 PIN`** exibindo apenas os seus interruptores favoritos do dia a dia. Clique no **ícone de pino** na lateral direita de qualquer cartão (ou clique com o **botão direito** no cartão) para fixar ou desafixar módulos:
 
 | Atalho | Aba | Domínio Funcional | Qtd. de Módulos | Cor de Destaque |
 | :---: | :---: | :--- | :---: | :--- |
+| **`⌘P`** | `📌 PIN` | **Deck de Favoritos Fixados (Visão Padrão)** | Personalizável (6 padrão) | Âmbar Tungstênio (`#F59E0B`) |
 | **`⌘1`** | `PWR` | `M.01 // POWER & SLEEP` (Energia e Repouso) | 5 | Âmbar Tungstênio (`#F59E0B`) |
 | **`⌘2`** | `OPT` | `M.02 // OPTICS & LUMINANCE` (Óptica e Tela) | 4 | Marfim Quente (`#F4F4F0`) |
 | **`⌘3`** | `WKS` | `M.03 // SPATIAL WORKSPACE` (Mesa, Finder e Dock) | 6 | Ciano Osciloscópio (`#38BDF8`) |

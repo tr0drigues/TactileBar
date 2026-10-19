@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_NAME="TactileBar"
 BUNDLE_ID="studio.tactile.TactileBar"
-VERSION="1.2.0"
+VERSION="1.3.0"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 

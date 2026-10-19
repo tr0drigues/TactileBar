@@ -5,7 +5,13 @@ import Observation
 @MainActor
 public final class SwitchRegistry {
     public private(set) var switches: [any TactileSwitchProtocol]
-    public var selectedDomainFilter: SwitchDomain? = .power
+    public var selectedDomainFilter: SwitchDomain? = .power {
+        didSet {
+            isShowingPinnedOnly = false
+        }
+    }
+    public var isShowingPinnedOnly: Bool = true
+    public private(set) var pinnedSwitchIDs: Set<String>
     public var searchQuery: String = ""
     public var isShowingSupportSheet: Bool = false
     public var isShowingRadialDial: Bool = true
@@ -24,7 +30,11 @@ public final class SwitchRegistry {
     public private(set) var totalTriggerCount: Int
     public private(set) var hardwareTelemetry: SystemHardwareTelemetrySnapshot = .initial
 
+    public static let defaultPinnedSwitchIDs: [String] = [
+        "SW.01", "SW.06", "SW.10", "SW.16", "SW.17", "SW.25"
+    ]
     public static let preferredBluetoothStorageKey = "studio.tactile.TactileBar.preferredBluetoothAddress"
+    public static let pinnedSwitchesStorageKey = "studio.tactile.TactileBar.pinnedSwitchIDs"
     private let triggerCountStorageKey = "studio.tactile.TactileBar.totalTriggerCount"
     private let userDefaults: UserDefaults
 
@@ -35,6 +45,11 @@ public final class SwitchRegistry {
         self.switches = switches
         self.userDefaults = userDefaults
         self.totalTriggerCount = userDefaults.integer(forKey: triggerCountStorageKey)
+        if let savedPins = userDefaults.stringArray(forKey: Self.pinnedSwitchesStorageKey) {
+            self.pinnedSwitchIDs = Set(savedPins)
+        } else {
+            self.pinnedSwitchIDs = Set(Self.defaultPinnedSwitchIDs)
+        }
         self.hardwareTelemetry = HardwareTelemetryService.shared.captureSnapshot()
         let initialVolumes = DiskVolumeTelemetryService.listMountedVolumes()
         self.mountedVolumes = initialVolumes
@@ -72,6 +87,9 @@ public final class SwitchRegistry {
                     || item.subsystemLabel.localizedStandardContains(trimmedQuery)
             }
         }
+        if isShowingPinnedOnly {
+            return switches.filter { pinnedSwitchIDs.contains($0.id) }
+        }
         return switches.filter { item in
             selectedDomainFilter == nil || item.domain == selectedDomainFilter
         }
@@ -79,6 +97,45 @@ public final class SwitchRegistry {
 
     public var activeSwitchCount: Int {
         switches.filter { $0.state.isEnabled }.count
+    }
+
+    public var pinnedCounts: (active: Int, total: Int) {
+        var active = 0
+        var total = 0
+        for item in switches where pinnedSwitchIDs.contains(item.id) {
+            total += 1
+            if item.state.isEnabled {
+                active += 1
+            }
+        }
+        return (active, total)
+    }
+
+    public func isPinned(_ switchID: String) -> Bool {
+        pinnedSwitchIDs.contains(switchID)
+    }
+
+    public func togglePin(forSwitchID switchID: String) {
+        if pinnedSwitchIDs.contains(switchID) {
+            pinnedSwitchIDs.remove(switchID)
+        } else {
+            pinnedSwitchIDs.insert(switchID)
+        }
+        userDefaults.set(Array(pinnedSwitchIDs).sorted(), forKey: Self.pinnedSwitchesStorageKey)
+    }
+
+    public func restoreDefaultPins() {
+        pinnedSwitchIDs = Set(Self.defaultPinnedSwitchIDs)
+        userDefaults.set(Self.defaultPinnedSwitchIDs, forKey: Self.pinnedSwitchesStorageKey)
+    }
+
+    public func selectPinnedFilter() {
+        isShowingPinnedOnly = true
+    }
+
+    public func selectDomainFilter(_ domain: SwitchDomain?) {
+        selectedDomainFilter = domain
+        isShowingPinnedOnly = false
     }
 
     public func domainCounts(for domain: SwitchDomain) -> (active: Int, total: Int) {
@@ -247,13 +304,21 @@ public final class SwitchRegistry {
         refreshDiskVolumes()
         refreshBluetoothDevices()
 
+        let pinnedOnly = isShowingPinnedOnly
+        let currentPins = pinnedSwitchIDs
         let activeDomain = selectedDomainFilter
         let primaryIDs = switches
-            .filter { activeDomain == nil || $0.domain == activeDomain }
+            .filter { item in
+                if pinnedOnly {
+                    return currentPins.contains(item.id)
+                }
+                return activeDomain == nil || item.domain == activeDomain
+            }
             .map(\.id)
+        let primarySet = Set(primaryIDs)
         let secondaryIDs = switches
-            .filter { activeDomain != nil && $0.domain != activeDomain }
             .map(\.id)
+            .filter { !primarySet.contains($0) }
 
         await withTaskGroup(of: Void.self) { group in
             for id in primaryIDs {

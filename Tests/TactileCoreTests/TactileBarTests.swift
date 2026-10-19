@@ -32,9 +32,20 @@ final class TactileBarTests: XCTestCase {
     }
 
     func testRegistryDomainAndSearchFiltering() {
-        let switches = TactileSwitchCatalog.makeAllSwitches()
-        let registry = SwitchRegistry(switches: switches)
+        let suiteName = "studio.tactile.TactileBarTests.\(UUID().uuidString)"
+        let testDefaults = UserDefaults(suiteName: suiteName)!
+        defer { testDefaults.removePersistentDomain(forName: suiteName) }
 
+        let switches = TactileSwitchCatalog.makeAllSwitches()
+        let registry = SwitchRegistry(switches: switches, userDefaults: testDefaults)
+
+        // Starts on the curated Pinned Deck ("Less, but better" — 6 default pins)
+        XCTAssertTrue(registry.isShowingPinnedOnly)
+        XCTAssertEqual(registry.filteredSwitches.count, 6)
+
+        // Selecting a domain exits Pinned mode and filters by domain
+        registry.selectDomainFilter(.power)
+        XCTAssertFalse(registry.isShowingPinnedOnly)
         XCTAssertEqual(registry.filteredSwitches.count, 5)
 
         registry.selectedDomainFilter = nil
@@ -46,6 +57,24 @@ final class TactileBarTests: XCTestCase {
         registry.searchQuery = "XCODE"
         XCTAssertEqual(registry.filteredSwitches.count, 1)
         XCTAssertEqual(registry.filteredSwitches.first?.id, "SW.25")
+    }
+
+    func testRegistryPinToggleAndRestore() {
+        let suiteName = "studio.tactile.TactileBarTests.Pins.\(UUID().uuidString)"
+        let testDefaults = UserDefaults(suiteName: suiteName)!
+        defer { testDefaults.removePersistentDomain(forName: suiteName) }
+
+        let switches = TactileSwitchCatalog.makeAllSwitches()
+        let registry = SwitchRegistry(switches: switches, userDefaults: testDefaults)
+
+        XCTAssertTrue(registry.isPinned("SW.01"))
+        registry.togglePin(forSwitchID: "SW.01")
+        XCTAssertFalse(registry.isPinned("SW.01"))
+        XCTAssertEqual(registry.pinnedCounts.total, 5)
+
+        registry.restoreDefaultPins()
+        XCTAssertTrue(registry.isPinned("SW.01"))
+        XCTAssertEqual(registry.pinnedCounts.total, 6)
     }
 
     func testSemanticVersionComparison() {
