@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="TactileBar"
 BUNDLE_ID="studio.tactile.TactileBar"
-VERSION="1.3.1"
+VERSION="1.4.0"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 
